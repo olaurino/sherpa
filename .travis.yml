@@ -5,9 +5,13 @@ python:
 
 sudo: false
 
+cache:
+  directories:
+    - $HOME/xspec
+
 addons:
   apt:
-    packages:
+    packages: &default_apt
       - build-essential
       - gfortran
       - flex
@@ -15,11 +19,22 @@ addons:
 
 env:
   - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
-  - FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
-  - INSTALL_TYPE=install TEST=package
-  - FITS="astropy" INSTALL_TYPE=install TEST=package
-  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
-  - INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
+#  - FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
+#  - INSTALL_TYPE=install TEST=package
+#  - FITS="astropy" INSTALL_TYPE=install TEST=package
+#  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
+#  - INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
+
+matrix:
+  include:
+    - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
+      python: "2.7"
+      sudo: required
+      addons:
+        apt:
+          packages:
+            - *default_apt
+            - [libccfitsio0 libcfitsio3 libwcs4 libccfits-dev wcslib-dev libx11-dev tcl]
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -38,6 +53,33 @@ before_install:
      then git submodule deinit -f .;
     fi
   - if [ -n "${NOSETUPTOOLS}" ]; then conda remove --yes setuptools; fi
+  - if [ -n "${XSPEC}" ];
+    then
+        sudo apt-get install -qq libccfits0 libcfitsio3 libwcs4 libccfits-dev wcslib-dev libx11-dev tcl;
+        OLD_DIR=`pwd`;
+        mkdir -p $HOME/xspec
+        cd $HOME/xspec;
+        XSPEC_HEASOFT_VERSION="6.16";
+        XSPEC_PATCH="Xspatch_120802q.tar.gz";
+        XSPEC_PATCH_INSTALLER="patch_install_4.6.tcl";
+        wget -N http://heasarc.gsfc.nasa.gov/FTP/software/lheasoft/lheasoft${XSPEC_HEASOFT_VERSION}/xspec-modelsonly.tar.gz;
+        tar xf xspec-modelsonly.tar.gz;
+        wget -N http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/issues/${XSPEC_PATCH} -P xspec-modelsonly/Xspec/src;
+        wget -N http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/issues/${XSPEC_PATCH_INSTALLER} -P xspec-modelsonly/Xspec/src;
+        cd xspec-modelsonly/Xspec/xrc;
+        tclsh ${XSPEC_PATCH_INSTALLER} -m -n;
+        rm -rf XSFits;
+        cd ../../BUILD_DIR;
+        ./configure && make && make install;
+        cd ../;
+        if [ ! -e install ]; then ln -s x86_64* install; fi;
+        export HEADAS=`pwd`/spectral;
+        export XSPEC_LIBS=`pwd`/install/lib;
+        export LD_LIBRARY_PATH=$XSPEC_LIBS;
+        cd $OLD_DIR;
+        sed -i.orig "s|#with-xspec=True|with-xspec=True|" setup.cfg;
+        sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs = $XSPEC_LIBS|" setup.cfg;
+    fi
 
 install:
   - python setup.py $INSTALL_TYPE
