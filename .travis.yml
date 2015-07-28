@@ -17,24 +17,27 @@ addons:
       - flex
       - bison
 
-env:
-  - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
-#  - FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
-#  - INSTALL_TYPE=install TEST=package
-#  - FITS="astropy" INSTALL_TYPE=install TEST=package
-#  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
-#  - INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
-
 matrix:
   include:
     - env: XSPEC="true" FITS="astropy" INSTALL_TYPE=develop TEST=submodule
       python: "2.7"
       sudo: required
-      addons:
-        apt:
-          packages:
-            - *default_apt
-            - [libwcs4 wcslib-dev libx11-dev tcl]
+#      addons:
+#        apt:
+#          packages:
+#            - *default_apt
+#            - [libwcs4 wcslib-dev libx11-dev tcl]
+    - env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule
+      python: "2.7"
+    - env: INSTALL_TYPE=install TEST=package
+      python: "2.7"
+    - env: INSTALL_TYPE=install TEST=smoke NOSETUPTOOLS="true"
+      python: "2.7"
+
+env:
+  - FITS="astropy" INSTALL_TYPE=develop TEST=submodule
+  - FITS="astropy" INSTALL_TYPE=install TEST=package
+  - FITS="astropy" INSTALL_TYPE=install TEST=smoke
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
