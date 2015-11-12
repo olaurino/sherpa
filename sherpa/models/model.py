@@ -18,14 +18,14 @@
 #
 
 
-from itertools import izip
+from builtins import zip as izip
 import logging
 import numpy
 import hashlib
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr
 
-from parameter import Parameter
+from .parameter import Parameter
 
 warning = logging.getLogger(__name__).warning
 
@@ -45,12 +45,12 @@ def modelCacher1d(func):
         digest = ''
         if use_caching:
 
-            data = [ numpy.array(pars).tostring(), str(kwargs.get('integrate',0)), 
+            data = [ numpy.array(pars).tostring(), kwargs.get('integrate',b'0'),
                      numpy.asarray(xlo).tostring() ]
             if args:
                 data.append( numpy.asarray(args[0]).tostring() )
 
-            token = ''.join(data)
+            token = b''.join(data)
             digest = hashlib.sha256(token).digest()
             if digest in cache:
                 return cache[digest]
@@ -388,16 +388,16 @@ class ArithmeticModel(Model):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('_use_caching'):
+        if '_use_caching' not in state:
             self.__dict__['_use_caching'] = False
 
-        if not state.has_key('_queue'):
+        if '_queue' not in state:
             self.__dict__['_queue'] = ['']
 
-        if not state.has_key('_cache'):
+        if '_cache' not in state:
             self.__dict__['_cache'] = {}
 
-        if not state.has_key('cache'):
+        if 'cache' not in state:
             self.__dict__['cache'] = 5
 
 

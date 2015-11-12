@@ -16,7 +16,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+from __future__ import print_function
 
 import numpy
 import logging
@@ -111,9 +111,9 @@ class test_sim(SherpaTestCase):
                                       getattr(results, key),
                                       1.e-4, 1.e-4)
             except AssertionError:
-                print 'parvals bench: ', self._fit_results_bench[key]
-                print 'parvals fit:   ', getattr(results, key)
-                print 'results', results
+                print('parvals bench: ', self._fit_results_bench[key])
+                print('parvals fit:   ', getattr(results, key))
+                print('results', results)
                 raise
 
         covresults = self.fit.est_errors()

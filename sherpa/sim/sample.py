@@ -20,7 +20,7 @@
 
 import numpy
 import numpy.random
-from itertools import izip
+from builtins import zip as izip
 
 from sherpa.estmethods import Covariance, Confidence
 from sherpa.utils.err import EstErr
@@ -278,18 +278,22 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         return multivariate_t(vals, cov, dof, int(num))
 
 
+class evaluate:
+    def __init__(self, fit):
+        self.fit = fit
+    def __call__(self, sample):
+        self.fit.model.thawedpars = sample
+        return self.fit.calc_stat()
+
+
 def _sample_stat(fit, samples, numcores=None):
 
     oldvals = fit.model.thawedpars
 
-    def evaluate(sample):
-        fit.model.thawedpars = sample
-        return fit.calc_stat()
-
     stats = None
     try:
         fit.model.startup()
-        stats = numpy.asarray(parallel_map(evaluate, samples, numcores))
+        stats = numpy.asarray(parallel_map(evaluate(fit), samples, numcores))
     finally:
         fit.model.teardown()
         fit.model.thawedpars = oldvals

@@ -25,6 +25,7 @@ from sherpa.utils import SherpaTestCase, test_data_missing
 from sherpa.utils import has_package_from_list, has_fits_support
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
+from past.builtins import execfile
 
 logger = logging.getLogger('sherpa')
 

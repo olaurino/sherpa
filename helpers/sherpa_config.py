@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
@@ -18,8 +19,8 @@
 #
 
 
-from extensions import build_ext, build_lib_arrays
-from deps import build_deps
+from .extensions import build_ext, build_lib_arrays
+from .deps import build_deps
 
 from numpy.distutils.core import Command
 import os
@@ -105,8 +106,6 @@ class sherpa_config(Command):
         if self.fftw != 'local':
             configure.append('--enable-fftw')
 
-        self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
-        self.distribution.ext_modules.append(build_ext('wcs', *build_lib_arrays(self, 'wcs')))
         ld1, inc1, l1 = build_lib_arrays(self, 'wcs')
         if self.region != 'local':
             configure.append('--enable-region')
@@ -116,7 +115,7 @@ class sherpa_config(Command):
 
         if self.extra_fortran_link_flags:
             flags = self.extra_fortran_link_flags.split(' ')
-            from extensions import fortran_exts
+            from .extensions import fortran_exts
             for ext in fortran_exts:
                 ext.extra_link_args.extend(flags)
 
@@ -136,6 +135,8 @@ class sherpa_config(Command):
         return configure
 
     def run(self):
+        self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
+        self.distribution.ext_modules.append(build_ext('wcs', *build_lib_arrays(self, 'wcs')))
         if not os.path.exists('extern/built'):
             configure = self.build_configure()
             build_deps(configure)

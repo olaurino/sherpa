@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
@@ -19,7 +20,7 @@
 
 
 from numpy.distutils.core import Command
-from extensions import build_ext, build_lib_arrays
+from .extensions import build_ext, build_lib_arrays
 
 def clean(xs):
     "Remove all '' entries from xs, returning the new list."
@@ -71,7 +72,7 @@ class xspec_config(Command):
             if package not in dist_packages:
                 dist_packages.append(package)
 
-            if not dist_data.has_key(package):
+            if package not in dist_data:
                 dist_data[package] = ['tests/test_*.py']
 
             ld1, inc1, l1 = build_lib_arrays(self, 'xspec')
@@ -89,5 +90,5 @@ class xspec_config(Command):
         else:
             if package in dist_packages:
                 dist_packages.remove(package)
-            if dist_data.has_key(package):
+            if package in dist_data:
                 del dist_data[package]

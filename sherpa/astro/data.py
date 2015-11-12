@@ -21,7 +21,6 @@
 Classes for storing, inspecting, and manipulating astronomical data sets
 """
 
-from itertools import izip
 import os.path
 import numpy
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND

@@ -51,7 +51,7 @@ def get_arr_from_imager(im):
     return data_out
 
 class test_image(SherpaTestCase):
-    if (os.environ.has_key("DISPLAY") == True):
+    if "DISPLAY" in os.environ:
         @unittest.skipIf(not has_package_from_list('sherpa.image.ds9_backend'),
                          "required package sherpa.image.ds9_backend not available")
         def test_ds9(self):

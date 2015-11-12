@@ -62,17 +62,12 @@ import sys
 import math
 import time
 import inspect
-from itertools import izip
+from builtins import zip as izip
+from past.builtins import xrange
 
-try:
-    # try lgamma in >= Python 2.7
-    math.lgamma(1)
-
-    lgam = math.lgamma
-except:
-    # default to log(gamma()) in < Python2.7
-    from test.test_random import gamma
-    lgam = lambda x : math.log(gamma(x))
+# Only Python >=2.7 supported
+math.lgamma(1)
+lgam = math.lgamma
 
 logger = logging.getLogger("sherpa")
 info = logger.info

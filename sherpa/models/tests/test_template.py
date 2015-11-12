@@ -27,6 +27,7 @@ from sherpa import ui
 import numpy
 import logging
 import os
+from past.builtins import map, execfile
 
 logger = logging.getLogger("sherpa")
 

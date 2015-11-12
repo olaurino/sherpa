@@ -16,6 +16,7 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+from __future__ import print_function
 
 import os.path
 
@@ -224,9 +225,9 @@ class test_stats(SherpaTestCase):
                 assert numpy.allclose(arg1[key], getattr(arg2, key),
                                       1.e-4, 1.e-4)
             except AssertionError:
-                print 'parvals bench: ', arg1[key]
-                print 'parvals fit:   ', getattr(arg2, key)
-                print 'results', arg2
+                print('parvals bench: ', arg1[key])
+                print('parvals fit:   ', getattr(arg2, key))
+                print('results', arg2)
                 raise
 
     def test_cash_stat(self):

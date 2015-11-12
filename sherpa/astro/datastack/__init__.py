@@ -217,7 +217,7 @@ functions.
 import sys
 import types
 import re
-import ConfigParser
+import configparser
 import numpy
 import sherpa
 import sherpa.astro.ui as ui
@@ -262,9 +262,9 @@ def set_stack_verbose(verbose=True):
         logger.setLevel(logging.WARNING)
 
 # Get plot package
-_cp = ConfigParser.ConfigParser()
+_cp = configparser.ConfigParser()
 _cp.read(sherpa.get_config())
-_plot_pkg =  _cp.get('options', 'plot_pkg')
+_plot_pkg = _cp.get('options', 'plot_pkg')
 if _plot_pkg == 'pylab':
     import matplotlib.pyplot as plt
 elif _plot_pkg == 'chips':
@@ -575,7 +575,7 @@ class DataStack(object):
                 model = eval(model, globals(), ui.__dict__)
             except TypeError:
                 pass
-            except Exception, exc:
+            except Exception as exc:
                 raise type(exc)('Error converting model "{0}" '
                                  'to a sherpa model object: {1}'.format(model, exc))
             for dataset in datasets:

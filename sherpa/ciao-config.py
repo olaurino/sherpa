@@ -1,3 +1,4 @@
+from __future__ import print_function
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -31,9 +32,9 @@ except:
 
 def ciao_exception_handler(self, type, value, traceback):
     if str(value).find('chips ') == 0:
-        print >> sys.stderr, '%s' % (value,)
+        print('%s' % (value,), file=sys.stderr)
     else:
-        print >> sys.stderr, '%s: %s' % (type.__name__, value)
+        print('%s: %s' % (type.__name__, value), file=sys.stderr)
 IPython.ipapi.get().set_custom_exc((Exception,), ciao_exception_handler)
 
 # If readline.clear_history() undefined, add a no-op

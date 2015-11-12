@@ -37,28 +37,29 @@ from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
 from sherpa import get_config
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
+import importlib
 
 config = ConfigParser()
 config.read(get_config())
 
 plot_opt = config.get('options','plot_pkg')
-plot_opt = str(plot_opt).strip().lower() + '_backend'
-if plot_opt == 'matplotlib_backend':
-    plot_opt = 'pylab_backend'
+plot_opt = '.{}_backend'.format(str(plot_opt).strip().lower())
+if plot_opt == '.matplotlib_backend':
+    plot_opt = '.pylab_backend'
 
-if plot_opt == 'none_backend':
-    plot_opt = 'dummy_backend'
+if plot_opt == '.none_backend':
+    plot_opt = '.dummy_backend'
 
 try:
-    backend = __import__(plot_opt, globals(), locals(), [])
+    backend = importlib.import_module(plot_opt, package=__package__)
 except:
     # if the user inputs a malformed backend or it is not found,
     # give a useful warning and fall back on dummy_backend of noops
     warning('failed to import sherpa.plot.%s;' % plot_opt +
             ' plotting routines will not be available')
-    import dummy_backend as backend
-    plot_opt = 'dummy_backend'
+    from . import dummy_backend as backend
+    plot_opt = '.dummy_backend'
 
 backend.init()
 
@@ -1699,6 +1700,27 @@ class Confidence2D(DataContour, Point):
             self.contour_prefs['ylog']=False
 
 
+class eval_proj2():
+    def __init__(self, log, par, thawed, fit):
+        self.log = log
+        self.par = par
+        self.thawed = thawed
+        self.fit = fit
+
+    def __call__(self, val):
+        if self.log:
+            val = numpy.power(10, val)
+        self.par.val = val
+        if len(self.thawed) > 1:
+            r = self.fit.fit()
+            return r.statval
+        return self.fit.calc_stat()
+
+
+def returns_none():
+    return None
+
+
 class IntervalProjection(Confidence1D):
 
     def __init__(self):
@@ -1710,7 +1732,6 @@ class IntervalProjection(Confidence1D):
                 delv=None, fac=1, log=False, numcores=None):
         self.fast = fast
         Confidence1D.prepare(self, min, max, nloop, delv, fac, log, numcores)
-
 
     def calc(self, fit, par, methoddict=None):
         self.title = 'Interval-Projection'
@@ -1752,26 +1773,17 @@ class IntervalProjection(Confidence1D):
         oldpars = fit.model.thawedpars
         par.freeze()
 
-        def eval_proj(val):
-            if self.log:
-                val = numpy.power(10, val)
-            par.val = val
-            if len(thawed) > 1:
-                r = fit.fit()
-                return r.statval
-            return fit.calc_stat()
-
         try:
             fit.model.startup()
 
             # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
             startup = fit.model.startup
-            fit.model.startup = lambda : None
+            fit.model.startup = returns_none
             teardown = fit.model.teardown
-            fit.model.teardown = lambda : None
+            fit.model.teardown = returns_none
 
-            self.y = numpy.asarray(parallel_map(eval_proj, xvals,
+            self.y = numpy.asarray(parallel_map(eval_proj2(self.log, par, thawed, fit), xvals,
                                                 self.numcores))
 
         finally:
@@ -1784,6 +1796,19 @@ class IntervalProjection(Confidence1D):
             fit.model.teardown()
             fit.model.thawedpars = oldpars
             fit.method = oldfitmethod
+
+
+class eval_uncert0():
+    def __init__(self, log, par, fit):
+        self.log = log
+        self.par = par
+        self.fit = fit
+
+    def __call__(self, val):
+        if self.log:
+            val = numpy.power(10, val)
+        self.par.val = val
+        return self.fit.calc_stat()
 
 
 class IntervalUncertainty(Confidence1D):
@@ -1807,15 +1832,9 @@ class IntervalUncertainty(Confidence1D):
         for i in thawed:
             i.freeze()
 
-        def eval_uncert(val):
-            if self.log:
-                val = numpy.power(10, val)
-            par.val = val
-            return fit.calc_stat()
-
         try:
             fit.model.startup()
-            self.y = numpy.asarray(parallel_map(eval_uncert, xvals,
+            self.y = numpy.asarray(parallel_map(eval_uncert0(self.log, par, fit), xvals,
                                                 self.numcores))
 
         finally:
@@ -1825,6 +1844,28 @@ class IntervalUncertainty(Confidence1D):
             fit.model.teardown()
             fit.model.thawedpars = oldpars
 
+
+class eval_proj():
+    def __init__(self, log, par0, par1, thawed, fit):
+        self.log = log
+        self.par0 = par0
+        self.par1 = par1
+        self.thawed = thawed
+        self.fit = fit
+
+    def __call__(self, pars):
+        for ii in [0,1]:
+            if self.log[ii]:
+                pars[ii] = numpy.power(10, pars[ii])
+        (self.par0.val, self.par1.val) = pars
+        if len(self.thawed) > 2:
+            r = self.fit.fit()
+            return r.statval
+        return self.fit.calc_stat()
+
+
+def return_none():
+    return None
 
 class RegionProjection(Confidence2D):
 
@@ -1839,7 +1880,6 @@ class RegionProjection(Confidence2D):
         self.fast = fast
         Confidence2D.prepare(self, min, max, nloop, delv, fac, log,
                              sigma, levels, numcores)
-
 
     def calc(self, fit, par0, par1, methoddict=None):
         self.title='Region-Projection'
@@ -1880,17 +1920,6 @@ class RegionProjection(Confidence2D):
                     warning("Setting optimization to " + fit.method.name
                             + " for region projection plot")
 
-
-        def eval_proj(pars):
-            for ii in [0,1]:
-                if self.log[ii]:
-                    pars[ii] = numpy.power(10, pars[ii])
-            (par0.val, par1.val) = pars
-            if len(thawed) > 2:
-                r = fit.fit()
-                return r.statval
-            return fit.calc_stat()
-
         oldpars = fit.model.thawedpars
 
         try:
@@ -1899,16 +1928,17 @@ class RegionProjection(Confidence2D):
             # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
             startup = fit.model.startup
-            fit.model.startup = lambda : None
+            fit.model.startup = return_none
             teardown = fit.model.teardown
-            fit.model.teardown = lambda : None
+            fit.model.teardown = return_none
 
             grid = self._region_init(fit, par0, par1)
 
             par0.freeze()
             par1.freeze()
 
-            self.y = numpy.asarray(parallel_map(eval_proj, grid,
+            self.y = numpy.asarray(parallel_map(eval_proj(self.log, par0, par1, thawed, fit),
+                                                grid,
                                                 self.numcores))
 
         finally:
@@ -1922,6 +1952,21 @@ class RegionProjection(Confidence2D):
             fit.model.teardown()
             fit.model.thawedpars = oldpars
             fit.method = oldfitmethod
+
+
+class eval_uncert():
+    def __init__(self, log, par0, par1, fit):
+        self.log = log
+        self.par0 = par0
+        self.par1 = par1
+        self.fit = fit
+
+    def __call__(self, pars):
+        for ii in [0,1]:
+            if self.log[ii]:
+                pars[ii] = numpy.power(10, pars[ii])
+        (self.par0.val, self.par1.val) = pars
+        return self.fit.calc_stat()
 
 
 class RegionUncertainty(Confidence2D):
@@ -1942,13 +1987,6 @@ class RegionUncertainty(Confidence2D):
         if par1 not in thawed:
             raise ConfidenceErr('thawed', par1.fullname, fit.model.name)
 
-        def eval_uncert(pars):
-            for ii in [0,1]:
-                if self.log[ii]:
-                    pars[ii] = numpy.power(10, pars[ii])
-            (par0.val, par1.val) = pars
-            return fit.calc_stat()
-
         oldpars = fit.model.thawedpars
 
         try:
@@ -1959,7 +1997,13 @@ class RegionUncertainty(Confidence2D):
             for i in thawed:
                 i.freeze()
 
-            self.y = numpy.asarray(parallel_map(eval_uncert, grid,
+            self.y = numpy.asarray(parallel_map(eval_uncert(
+                                                self.log,
+                                                par0,
+                                                par1,
+                                                fit
+                                                ),
+                                                grid,
                                                 self.numcores))
 
         finally:

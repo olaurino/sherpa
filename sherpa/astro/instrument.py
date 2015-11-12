@@ -35,7 +35,7 @@ from sherpa.astro.data import DataARF, DataRMF, DataPHA, _notice_resp, \
     DataIMG
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
-from itertools import izip
+from builtins import zip as izip
 
 _tol = numpy.finfo(numpy.float32).eps
 

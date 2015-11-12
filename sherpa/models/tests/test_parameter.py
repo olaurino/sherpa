@@ -116,9 +116,12 @@ class test_composite_parameter(SherpaTestCase):
             self.assertEqual(p.val, op(self.p.val))
 
     def test_binop(self):
-        for op in (operator.add, operator.sub, operator.mul, operator.div,
+        ops = [operator.add, operator.sub, operator.mul,
                    operator.floordiv, operator.truediv, operator.mod,
-                   operator.pow):
+                   operator.pow]
+        if hasattr(operator, 'div'):
+            ops.append(operator.div)
+        for op in ops:
             for p in (op(self.p, self.p2.val), op(self.p.val, self.p2),
                       op(self.p, self.p2)):
                 self.assert_(isinstance(p, BinaryOpParameter))

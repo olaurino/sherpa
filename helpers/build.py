@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2014  Smithsonian Astrophysical Observatory
 #
@@ -19,7 +20,7 @@
 
 
 from numpy.distutils.command.build import build as _build
-from deps import build_deps
+from .deps import build_deps
 
 import os
 

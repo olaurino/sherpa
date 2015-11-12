@@ -165,28 +165,61 @@ namespace sherpa { namespace integration {
 }  }  /* namespace integration, namespace sherpa */
 
 
-PyMODINIT_FUNC
-initintegration(void)
-{
+//PyMODINIT_FUNC
+//initintegration(void)
+//{
+//
+//  static void *Integration_API[3];
+//
+//  PyObject *m;
+//  PyObject *api_cobject;
+//
+//  if ( NULL == ( m = Py_InitModule( (char*)"integration", NULL ) ) )
+//    return;
+//
+//  Integration_API[0] = (void*)sherpa::integration::integrate_1d;
+//  Integration_API[1] = (void*)sherpa::integration::integrate_Nd;
+//  Integration_API[2] = (void*)sherpa::integration::py_integrate_1d;
+//
+//  if ( NULL == ( api_cobject = PyCObject_FromVoidPtr( (void*)Integration_API,
+//						      NULL) ) )
+//    return;
+//
+//  // Since the actual data is static, we can let PyModule_AddObject()
+//  // steal the reference
+//  PyModule_AddObject( m, (char*)"_C_API", api_cobject );
+//
+//}
 
+static struct PyModuleDef integration = {
+    PyModuleDef_HEAD_INIT,
+    "integration",
+    NULL,
+    -1,
+    NULL
+};
+
+PyMODINIT_FUNC PyInit_integration(void) {
   static void *Integration_API[3];
 
   PyObject *m;
   PyObject *api_cobject;
 
-  if ( NULL == ( m = Py_InitModule( (char*)"integration", NULL ) ) )
-    return;
+  if ( NULL == ( m = PyModule_Create( &integration ) ) )
+    return NULL;
 
   Integration_API[0] = (void*)sherpa::integration::integrate_1d;
   Integration_API[1] = (void*)sherpa::integration::integrate_Nd;
   Integration_API[2] = (void*)sherpa::integration::py_integrate_1d;
 
-  if ( NULL == ( api_cobject = PyCObject_FromVoidPtr( (void*)Integration_API,
+  if ( NULL == ( api_cobject = PyCapsule_New( (void*)Integration_API,
+                              NULL,
 						      NULL) ) )
-    return;
+    return NULL;
 
   // Since the actual data is static, we can let PyModule_AddObject()
   // steal the reference
   PyModule_AddObject( m, (char*)"_C_API", api_cobject );
 
+  return m;
 }

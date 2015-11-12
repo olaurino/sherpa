@@ -25,7 +25,8 @@ try:
 except ImportError:
     import pyfits
 import os
-from itertools import izip
+from builtins import zip as izip
+from past.builtins import basestring, xrange
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.io import get_ascii_data, write_arrays
@@ -208,7 +209,7 @@ def read_table_blocks(arg, make_copy=False):
     if type(arg) is pyfits.HDUList:
         filename = arg[0]._file.name
         hdus = arg
-    elif type(arg) in (str, unicode, numpy.str_) and is_binary_file(arg):
+    elif isinstance(arg, basestring) and is_binary_file(arg):
         filename = arg
         hdus = pyfits.open(arg)
     else:

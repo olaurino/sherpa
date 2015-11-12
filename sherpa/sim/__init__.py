@@ -194,6 +194,8 @@ parameter::
 
 """
 
+from past.builtins import basestring
+
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *

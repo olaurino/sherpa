@@ -24,7 +24,7 @@ Tools for creating, storing, inspecting, and manipulating data sets
 
 import sys
 import inspect
-from itertools import izip
+from builtins import zip as izip
 import numpy
 from sherpa.utils.err import DataErr, NotImplementedErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
@@ -84,7 +84,7 @@ class BaseData(NoNewAttributesAfterInit):
             raise NotImplementedErr('noinstanceallowed', 'BaseData')
 
         frame = sys._getframe().f_back
-        cond = (frame.f_code is self.__init__.im_func.func_code)
+        cond = (frame.f_code is self.__init__.__func__.__code__)
         assert cond, (('%s constructor must call BaseData constructor ' +
                        'directly') % type(self).__name__)
         args = inspect.getargvalues(frame)

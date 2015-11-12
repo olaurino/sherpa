@@ -32,6 +32,7 @@ the standard subpackages, use ``import sherpa.all`` or
 ``from sherpa.all import *``.
 
 """
+from __future__ import print_function
 
 
 import logging
@@ -74,7 +75,7 @@ Version: Sherpa %s Monday, July 19, 2010
 
 def _banner_fancy(file=sys.stdout):
     "Print a welcome message to the specified file object"
-    print >> file, _banner
+    print(_banner, file=file)
 
 def banner(file=sys.stdout):
     "No-op function; override with fancier version if desired to print banner"
@@ -95,12 +96,12 @@ def get_config():
 
     # If NOSHERPARC is set, read in system config file
     # ignore any user config file
-    if (os.environ.has_key('NOSHERPARC') == True):
+    if (('NOSHERPARC' in os.environ) == True):
         return os.path.join(os.path.dirname(__file__), filename)
 
     # If SHERPARC is set, read in config file from there,
     # and ignore default location
-    if (os.environ.has_key('SHERPARC') == True):
+    if (('SHERPARC' in os.environ) == True):
         config = os.environ.get('SHERPARC')
         if os.path.isfile(config):
             return config
@@ -136,6 +137,6 @@ def clitest():
         errno = pytest.main(['--pyargs', 'sherpa', '-rs'])
         sys.exit(errno)
     except ImportError:
-        print """Cannot import pytest and pytest-cov.
-            Please run 'pip install -r test_requirements.txt' first"""
+        print("""Cannot import pytest and pytest-cov.
+            Please run 'pip install -r test_requirements.txt' first""")
         sys.exit(1)

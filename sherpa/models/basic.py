@@ -18,12 +18,13 @@
 #
 
 import numpy
-from parameter import Parameter, tinyval
-from model import ArithmeticModel, modelCacher1d, CompositeModel, \
+from .parameter import Parameter, tinyval
+from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
     ArithmeticFunctionModel
 from sherpa.utils.err import ModelErr
 from sherpa.utils import *
-import _modelfcts
+from . import _modelfcts
+from past.builtins import xrange
 
 import logging
 warning = logging.getLogger(__name__).warning

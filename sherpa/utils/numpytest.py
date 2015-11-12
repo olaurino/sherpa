@@ -18,6 +18,7 @@
 # OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from __future__ import print_function
 
 import os
 import re
@@ -71,7 +72,7 @@ def set_package_path(level=1):
     if not os.path.isdir(d1):
         d1 = os.path.dirname(d)
     if DEBUG:
-        print 'Inserting %r to sys.path for test_file %r' % (d1, testfile)
+        print('Inserting %r to sys.path for test_file %r' % (d1, testfile))
     sys.path.insert(0,d1)
     return
 
@@ -93,7 +94,7 @@ def set_local_path(reldir='', level=1):
         testfile = f.f_locals['__file__']
     local_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(testfile)),reldir))
     if DEBUG:
-        print 'Inserting %r to sys.path' % (local_path)
+        print('Inserting %r to sys.path' % (local_path))
     sys.path.insert(0,local_path)
     return
 
@@ -102,7 +103,7 @@ def restore_path():
     #              "update your code", DeprecationWarning, stacklevel=2)
 
     if DEBUG:
-        print 'Removing %r from sys.path' % (sys.path[0])
+        print('Removing %r from sys.path' % (sys.path[0]))
     del sys.path[0]
     return
 
@@ -156,7 +157,7 @@ class NumpyTestCase (unittest.TestCase):
         elapsed = jiffies()
         while i<times:
             i += 1
-            exec code in globs,locs
+            exec(code, globs,locs)
         elapsed = jiffies() - elapsed
         return 0.01*elapsed
 
@@ -535,8 +536,8 @@ class NumpyTest:
                         fo = open(f)
                         test_module = imp.load_module(n, fo, f,
                                                       ('.py', 'U', 1))
-                    except Exception, msg:
-                        print 'Failed importing %s: %s' % (f,msg)
+                    except Exception as msg:
+                        print('Failed importing %s: %s' % (f,msg))
                         continue
                 finally:
                     if fo:
@@ -595,7 +596,7 @@ class NumpyTest:
             return
 
         if isinstance(self.package, str):
-            exec 'import %s as this_package' % (self.package)
+            exec('import %s as this_package' % (self.package))
         else:
             this_package = self.package
 
@@ -714,9 +715,9 @@ def importall(package):
             continue
         name = package_name+'.'+subpackage_name
         try:
-            exec 'import %s as m' % (name)
-        except Exception, msg:
-            print 'Failed importing %s: %s' %(name, msg)
+            exec('import %s as m' % (name))
+        except Exception as msg:
+            print('Failed importing %s: %s' %(name, msg))
             continue
         importall(m)
     return

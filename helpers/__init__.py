@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #
 #  Copyright (C) 2014, 2015  Smithsonian Astrophysical Observatory
 #
@@ -18,14 +19,14 @@
 #
 
 
-from build import build
-from clean import clean
-from develop import develop
-from install import install
-from sdist import sdist
-from test import PyTest
-from sherpa_config import sherpa_config
-from xspec_config import xspec_config
+from .build import build
+from .clean import clean
+from .develop import develop
+from .install import install
+from .sdist import sdist
+from .test import PyTest
+from .sherpa_config import sherpa_config
+from .xspec_config import xspec_config
 
 commands = {
     'build': build,

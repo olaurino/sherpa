@@ -20,6 +20,7 @@
 import numpy
 from sherpa.utils import *
 from sherpa.utils import SherpaFloat
+from past.builtins import xrange, map
 
 class test_utils(SherpaTestCase):
 
@@ -77,14 +78,18 @@ class test_utils(SherpaTestCase):
             self.assertEqual(m.__doc__, meth.__doc__)
             self.assertEqual(m(3), 6)
             self.assertEqual(m(3, 7), 21)
-            e = None
-            try:
+            with self.assertRaises(TypeError) as e:
                 m()
-            except TypeError, e:
-                pass
-            self.assertEqual(str(e),
+                self.assertEqual(str(e),
                              '%s() takes at least 1 argument (0 given)' %
                              meth.__name__)
+            # try:
+            #     m()
+            # except TypeError as e:
+            #     pass
+            # self.assertEqual(str(e),
+            #                  '%s() takes at least 1 argument (0 given)' %
+            #                  meth.__name__)
 
         # Non-method argument
         def f(x):  return 2*x

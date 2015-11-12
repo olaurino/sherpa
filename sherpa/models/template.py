@@ -18,12 +18,13 @@
 #
 
 
-from parameter import Parameter, tinyval
-from model import ArithmeticModel, modelCacher1d, CompositeModel, \
+from .parameter import Parameter, tinyval
+from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
     ArithmeticFunctionModel
-from basic import TableModel
+from .basic import TableModel
 import numpy, operator
 from sherpa.utils.err import ModelErr
+from future.utils import iteritems
 
 __all__ = ('create_template_model', 'TemplateModel', 'KNNInterpolator', 'Template')
 
@@ -66,7 +67,7 @@ def create_template_model(modelname, names, parvals, templates, template_interpo
     # Create the templates table from input
     tm = TemplateModel(modelname, pars, parvals, templates)
     if template_interpolator_name is not None:
-        if interpolators.has_key(template_interpolator_name):
+        if template_interpolator_name in interpolators:
             interp = interpolators[template_interpolator_name]
             args = interp[1]
             args['template_model'] = tm
@@ -107,7 +108,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
         self._distances = {}
         for i, t_point in enumerate(self.template_model.parvals):
             self._distances[i] = numpy.linalg.norm(point - t_point, self.order)
-        self._distances = sorted(self._distances.iteritems(), key=operator.itemgetter(1))
+        self._distances = sorted(iteritems(self._distances), key=operator.itemgetter(1))
 
     def interpolate(self, point, x_out):
         self._calc_distances(point)

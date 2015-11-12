@@ -24,7 +24,7 @@ from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, is
 
 import logging
 import sherpa.estmethods._est_funcs
-from itertools import izip
+from builtins import zip as izip
 
 try:
     import multiprocessing
@@ -1051,7 +1051,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                                parhardmaxes, 1.0, eps, tol, maxiters,
                                remin, limit_parnums, stat_cb,
                                fit_cb, report_progress)
-    except EstNewMin, e:
+    except EstNewMin as e:
         raise e
     except:
         error_scales = numpy.array(len(pars) * [est_hardminmax])
@@ -1191,7 +1191,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
                 # picklable for use in the queue.
                 err_q.put(EstNewMin(parvals))
                 return
-            except Exception, e:
+            except Exception as e:
                 #err_q.put( e.__class__() )
                 err_q.put(e)
                 return
@@ -1236,7 +1236,7 @@ def run_tasks(tasks, out_q, err_q, size):
         for task in tasks:
             task.join()
 
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         # kill all slave processes on ctrl-C
         die(tasks)
         raise e

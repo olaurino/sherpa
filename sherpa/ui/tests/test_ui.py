@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
+from __future__ import print_function
 import unittest
 from sherpa.utils import SherpaTest, SherpaTestCase, test_data_missing
 from sherpa.models import ArithmeticModel, Parameter
@@ -149,7 +149,7 @@ class test_psf_ui(SherpaTestCase):
                 self.assertTrue((numpy.array(mdl.get_center()) ==
                                  numpy.array([4])).all())
             except:
-                print model
+                print(model)
                 raise
 
 
@@ -163,7 +163,7 @@ class test_psf_ui(SherpaTestCase):
                 self.assertTrue((numpy.array(mdl.get_center()) ==
                                  numpy.array([108,130])).all())
             except:
-                print model
+                print(model)
                 raise
 
 

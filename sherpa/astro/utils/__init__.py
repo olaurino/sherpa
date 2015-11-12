@@ -20,9 +20,8 @@
 import logging
 warning = logging.getLogger(__name__).warning
 import numpy
-from _utils import *
-from _pileup import *
-from itertools import izip
+from ._utils import *
+from ._pileup import *
 from sherpa.utils import SherpaFloat, get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
 

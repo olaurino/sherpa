@@ -430,16 +430,31 @@ namespace sherpa { namespace models {
 }  }  /* namespace models, namespace sherpa */
 
 
+//#define SHERPAMODELMOD(name, fctlist) \
+//PyMODINIT_FUNC \
+//init##name(void) \
+//{ \
+//  import_array(); \
+//  if ( -1 == import_integration() ) \
+//    return; \
+//  Py_InitModule( (char*)#name, fctlist );	\
+//}
+
 #define SHERPAMODELMOD(name, fctlist) \
-PyMODINIT_FUNC \
-init##name(void) \
-{ \
+static struct PyModuleDef module##name = {\
+PyModuleDef_HEAD_INIT, \
+#name, \
+NULL, \
+-1, \
+fctlist \
+}; \
+\
+PyMODINIT_FUNC PyInit_##name(void) { \
   import_array(); \
   if ( -1 == import_integration() ) \
-    return; \
-  Py_InitModule( (char*)#name, fctlist );	\
+    return NULL; \
+  return PyModule_Create(&module##name); \
 }
-
 
 // Allow this to be customized on a per-file basis
 

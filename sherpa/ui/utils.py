@@ -18,10 +18,17 @@
 #
 
 import copy
-import copy_reg
-import cPickle as pickle
+from past.builtins import basestring
+
+try:
+    import copy_reg
+    import cPickle as pickle
+except ImportError:
+    import copyreg as copy_reg
+    import pickle
+
 import inspect
-from itertools import izip
+from builtins import zip as izip
 import logging
 import sys
 import os
@@ -35,7 +42,7 @@ info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 from sherpa import get_config
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 
 import readline
 import inspect
@@ -49,8 +56,11 @@ config.read(get_config())
 sys.tracebacklimit = int(config.get('verbosity', 'level'))
 numpy.set_printoptions(threshold=int(config.get('verbosity', 'arraylength')))
 
-
-_builtin_symbols_ = sys.modules["__builtin__"].__dict__.keys()
+try:
+    BUILTINS = sys.modules["__builtin__"]
+except KeyError:
+    BUILTINS = sys.modules["builtins"]
+_builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 __all__ = ('ModelWrapper', 'Session')
 
@@ -198,7 +208,7 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
 def _assign_obj_to_main(name, obj):
     sys.modules["__main__"].__dict__[name] = obj
-    sys.modules["__builtin__"].__dict__[name] = obj
+    BUILTINS.__dict__[name] = obj
 
 
 def _assign_model_to_main(name, model):
@@ -237,7 +247,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._model_globals.update(state['_model_types'])
 
-        if not state.has_key('_sources'):
+        if '_sources' not in state:
             self.__dict__['_sources'] = state.pop('_models')
 
         self.__dict__.update(state)
@@ -1912,7 +1922,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if isinstance(meth, basestring):
-            if (self._itermethods.has_key(meth) == True):
+            if (meth in self._itermethods):
                 self._current_itermethod = self._itermethods[meth]
             else:
                 raise TypeError(meth + ' is not an iterative fitting method')
@@ -5115,7 +5125,7 @@ class Session(NoNewAttributesAfterInit):
         # If model component name is a model type name
         # or session function name, don't create it, raise
         # warning
-        if (self._model_types.has_key(cmpt.name) is True):
+        if cmpt.name in self._model_types:
             modeltype = cmpt.name
             del cmpt
             raise IdentifierErr('badidmodel', modeltype)
@@ -5388,7 +5398,7 @@ class Session(NoNewAttributesAfterInit):
                     return
 
             del sys.modules["__main__"].__dict__[name]
-            del sys.modules["__builtin__"].__dict__[name]
+            del BUILTINS.__dict__[name]
         else:
             raise IdentifierErr('nomodelcmpt', name)
 
@@ -5581,7 +5591,7 @@ class Session(NoNewAttributesAfterInit):
                         if count == 0:
                             try:
                                 val = float(input)
-                            except Exception, e:
+                            except Exception as e:
                                 info("Please provide a float value; " + str(e))
                                 continue
 
@@ -5592,7 +5602,7 @@ class Session(NoNewAttributesAfterInit):
                                     val = float(str_val)
                                 if str_min != "":
                                     min = float(str_min)
-                            except Exception, e:
+                            except Exception as e:
                                 info("Please provide a float value; " + str(e))
                                 continue
 
@@ -5606,7 +5616,7 @@ class Session(NoNewAttributesAfterInit):
                                     min = float(str_min)
                                 if str_max != "":
                                     max = float(str_max)
-                            except Exception, e:
+                            except Exception as e:
                                 info("Please provide a float value; " + str(e))
                                 continue
                         else:
@@ -5617,7 +5627,7 @@ class Session(NoNewAttributesAfterInit):
                         try:
                             self.set_par(par, val, min, max)
                             break
-                        except Exception, e:
+                        except Exception as e:
                             info(str(e))
                             continue
                     else:
@@ -7373,7 +7383,7 @@ class Session(NoNewAttributesAfterInit):
         for i in ids:
             ds = self.get_data(i)
             mod = None
-            if self._models.has_key(i) or self._sources.has_key(i):
+            if i in self._models or i in self._sources:
                 mod = self._get_model(i)
 
             # The issue with putting a try/catch here is that if an exception
@@ -12334,9 +12344,9 @@ class Session(NoNewAttributesAfterInit):
                                     clearwindow=clearwindow)
 
             oldval = rp.plot_prefs['xlog']
-            if ((self._dataplot.plot_prefs.has_key('xlog') and
+            if (('xlog' in self._dataplot.plot_prefs and
                  self._dataplot.plot_prefs['xlog']) or
-                (self._modelplot.plot_prefs.has_key('xlog') and
+                ('xlog' in self._modelplot.plot_prefs and
                  self._modelplot.plot_prefs['xlog'])):
                 rp.plot_prefs['xlog'] = True
 
@@ -15587,4 +15597,3 @@ class Session(NoNewAttributesAfterInit):
 
         """
         return sherpa.image.Image.xpaset(arg, data)
-

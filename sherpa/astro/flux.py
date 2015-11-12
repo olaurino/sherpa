@@ -16,13 +16,13 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
+from __future__ import print_function
 
 import numpy
 import numpy.random
 import logging
+from past.builtins import xrange
 from sherpa.astro.utils import calc_energy_flux
-from itertools import izip
 from sherpa.utils import parallel_map
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     NormalParameterSampleFromScaleVector
@@ -97,8 +97,8 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     def print_sample_result(title, arg):
 
-        print '%s = %g, + %g, - %g' % (title, arg[0], arg[1] - arg[0],
-                                       arg[0] - arg[2])
+        print('%s = %g, + %g, - %g' % (title, arg[0], arg[1] - arg[0],
+                                       arg[0] - arg[2]))
     #
     # For later restoration
     #

@@ -37,7 +37,7 @@ def build_deps(configure):
     if not os.path.exists('extern/built'):
         prefix=os.getcwd()
         os.chdir('extern')
-        os.chmod(configure[0], 0755)
+        os.chmod(configure[0], 0o755)
         out = call(configure)
         if out != 0: exit(out)
     #    cflags = '-fPIC'

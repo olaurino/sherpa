@@ -29,7 +29,7 @@ from sherpa.astro.utils import compile_energy_grid, bounds_check
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins
 from numpy import iterable, array2string, asarray
-from itertools import izip
+from builtins import zip as izip
 import logging
 
 warning = logging.getLogger(__name__).warning

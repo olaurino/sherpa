@@ -20,7 +20,7 @@
 import os
 import logging
 import numpy
-from itertools import izip
+from past.builtins import zip as izip, basestring
 import sherpa.ui.utils
 from sherpa.ui.utils import _check_type, _send_to_pager
 from sherpa.utils import SherpaInt, SherpaFloat, sao_arange
@@ -6727,7 +6727,7 @@ class Session(sherpa.ui.utils.Session):
             for bid in data.background_ids:
                 try:
                     self.group(id, bid)
-                except DataErr, e:
+                except DataErr as e:
                     info(str(e))
 
             # Now check if data is already grouped, and send error message
@@ -7113,7 +7113,7 @@ class Session(sherpa.ui.utils.Session):
             for bid in data.background_ids:
                 try:
                     self.ungroup(id, bid)
-                except DataErr, e:
+                except DataErr as e:
                     info(str(e))
 
             # Now check if data is already ungrouped, and send error message
@@ -8969,7 +8969,7 @@ class Session(sherpa.ui.utils.Session):
                                       nint=nint, addmodel=addmodel,
                                       addredshift=addredshift)
 
-        except Exception, e:
+        except Exception as e:
             # print e, type(e)
             #raise e
             x = None
@@ -12445,9 +12445,9 @@ class Session(sherpa.ui.utils.Session):
         def _send_to_outfile(all, filename=None):
             try:
                 if filename is None:
-                    print all
+                    print(all)
                 else:
-                    outfile = file(filename, 'a')
+                    outfile = open(filename, 'a')
                     print >> outfile, all
             except:
                 raise

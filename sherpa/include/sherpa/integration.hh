@@ -103,7 +103,7 @@ import_integration(void)
     goto error;
 
   if ( NULL ==
-       ( Integration_API = (void**)PyCObject_AsVoidPtr( api_cobject ) ) )
+       ( Integration_API = (void**)PyCapsule_GetPointer( api_cobject, NULL ) ) )
     goto error;
 
   rv = 0;

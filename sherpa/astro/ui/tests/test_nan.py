@@ -24,6 +24,8 @@ from sherpa.astro import ui
 import logging
 import os
 import numpy
+from past.builtins import execfile
+
 logger = logging.getLogger("sherpa")
 
 

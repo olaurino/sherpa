@@ -17,7 +17,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from itertools import izip, repeat
+from builtins import zip as izip
 import logging
 import os
 import os.path
@@ -29,7 +29,8 @@ from sherpa.utils import SherpaFloat, SherpaInt, get_num_args
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import *
 from sherpa import get_config
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
+import importlib
 
 config = ConfigParser()
 config.read(get_config())
@@ -37,12 +38,12 @@ io_opt = config.get('options','io_pkg')
 io_opt = str(io_opt).strip().lower()
 
 if io_opt.startswith('pycrates') or io_opt.startswith('crates'):
-    io_opt = 'crates_backend'
+    io_opt = '.crates_backend'
 
 elif io_opt.startswith('pyfits'):
-    io_opt = 'pyfits_backend'
+    io_opt = '.pyfits_backend'
 
-backend = __import__(io_opt, globals(), locals(), [])
+backend = importlib.import_module(io_opt, package=__package__)
 warning = logging.getLogger(__name__).warning
 info    = logging.getLogger(__name__).info
 

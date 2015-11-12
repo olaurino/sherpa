@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # 
 #  Copyright (C) 2014  Smithsonian Astrophysical Observatory
 #
@@ -19,7 +20,7 @@
 
 
 from distutils.command.clean import clean as _clean
-from deps import clean_deps
+from .deps import clean_deps
 
 class clean(_clean):
     def run(self):

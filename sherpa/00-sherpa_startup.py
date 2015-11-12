@@ -1,3 +1,4 @@
+from __future__ import print_function
 # -*- Mode: Shell-Script -*-  Not really, but shows comments correctly
 #
 #  Copyright (C) 2012, 2015  Smithsonian Astrophysical Observatory
@@ -80,14 +81,14 @@ def _initialize_sherpa_app_():
 
     for min_crates_ver, creates_ver in versions[:-1]:
         if int(min_crates_ver) > int(crates_ver):
-            print "Warning: Importing CRATES version {}. This version is different than the one Sherpa {} was built and tested with and you may get unexpected results.".format(crates_version, sherpa_version)
+            print("Warning: Importing CRATES version {}. This version is different than the one Sherpa {} was built and tested with and you may get unexpected results.".format(crates_version, sherpa_version))
             break
 
     versions = zip(min_chips_version.split('.'), chips_version.split('.'))
 
     for min_chips_ver, chips_ver in versions[:-1]:
         if int(min_chips_ver) > int(chips_ver):
-            print "Warning: Importing CHiPS version {}. This version is different than the one Sherpa {} was built and tested with and you may get unexpected results.".format(chips_version, sherpa_version)
+            print("Warning: Importing CHiPS version {}. This version is different than the one Sherpa {} was built and tested with and you may get unexpected results.".format(chips_version, sherpa_version))
             break
 
 _initialize_sherpa_app_()
