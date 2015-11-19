@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import str
+from past.utils import old_div
 # 
 #  Copyright (C) 2008  Smithsonian Astrophysical Observatory
 #
@@ -160,7 +163,7 @@ class Kernel(NoNewAttributesAfterInit):
     def deinit(self, vals):
         if self.renorm is not None:
             vals = unpad_data(vals, self.renorm_shape, self.dshape)
-            vals = vals/self.renorm
+            vals = old_div(vals,self.renorm)
         if self.do_pad:
             vals = vals[self.pad_mask]
         return vals
@@ -243,7 +246,7 @@ class ConvolutionKernel(Model):
 
         size = data.size
         return self._tcd.convolve(data, kern, size, kern.size,
-                                  int(size/2))[:size]
+                                  int(old_div(size,2)))[:size]
 
 
 class PSFKernel(Kernel):
@@ -405,10 +408,10 @@ def _create_tail_grid( axis_list ):
         gridlo, gridhi = axis_list
         origsize = len(gridlo)
         width = (gridhi[0]-gridlo[0])
-        mid = (gridlo[0]+gridhi[0])/2.
+        mid = old_div((gridlo[0]+gridhi[0]),2.)
         mids = numpy.arange(mid, 0., -width)[::-1]
-        taillo = mids-width/2.
-        tailhi = mids+width/2.
+        taillo = mids-old_div(width,2.)
+        tailhi = mids+old_div(width,2.)
         return (taillo, tailhi)
 
     return None
@@ -604,7 +607,7 @@ class PSFModel(Model):
             kargs['width'] = [1]*len(kshape)
 
             if center is None:
-                kargs['center'] = [int(dim/2.) for dim in kshape]
+                kargs['center'] = [int(old_div(dim,2.)) for dim in kshape]
                 # update center param to default
                 self.center = kargs['center']
 
@@ -625,7 +628,7 @@ class PSFModel(Model):
             kargs['width'] = [1]*len(kshape)
 
             if center is None:
-                kargs['center'] = [int(dim/2.) for dim in dshape]
+                kargs['center'] = [int(old_div(dim,2.)) for dim in dshape]
                 # update center param to default
                 self.center = kargs['center']
 

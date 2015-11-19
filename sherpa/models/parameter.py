@@ -1,3 +1,4 @@
+from builtins import str
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #

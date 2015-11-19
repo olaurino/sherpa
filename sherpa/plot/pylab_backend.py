@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import str
+from past.utils import old_div
 # 
 #  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
@@ -230,7 +233,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         if markerfacecolor is None:
             markerfacecolor = color
         if xerr is not None:
-            xerr = xerr / 2.
+            xerr = old_div(xerr, 2.)
         xerr = _choose(xerrorbars, xerr)
         yerr = _choose(yerrorbars, yerr)
         line = axes.errorbar(x, y, yerr, xerr, ecolor=ecolor, capsize=capsize,

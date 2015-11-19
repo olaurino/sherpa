@@ -19,6 +19,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 # EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import print_function
+from builtins import map
+from builtins import str
+from builtins import object
 
 import os
 import re
@@ -122,7 +125,7 @@ def output_exception(printstream = sys.stdout):
     return
 
 
-class _dummy_stream:
+class _dummy_stream(object):
     def __init__(self,stream):
         self.data = []
         self.stream = stream
@@ -190,7 +193,7 @@ class NumpyTestCase (unittest.TestCase):
                             repr(result.stream.data)
                     result.stream.data[-1] = 'ignoring\n'
                 del result.errors[-1]
-        map(save_stream.write, result.stream.data)
+        list(map(save_stream.write, result.stream.data))
         save_stream.flush()
         result.stream = save_stream
 
@@ -259,7 +262,7 @@ class NumPyTextTestRunner(unittest.TextTestRunner):
         return _NumPyTextTestResult(self.stream, self.descriptions, self.verbosity)
 
 
-class NumpyTest:
+class NumpyTest(object):
     """ Numpy tests site manager.
 
     Usage: NumpyTest(<package>).test(level=1,verbosity=1)
@@ -331,7 +334,7 @@ class NumpyTest:
         If 'newname' is None, then no tests will be executed for a given
         module.
         """
-        for k,v in kws.items():
+        for k,v in list(kws.items()):
             self._rename_map[k] = v
         return
 
@@ -350,7 +353,7 @@ class NumpyTest:
             mth = getattr(clsobj, mthname)
             if type(mth) is not types.MethodType:
                 continue
-            d = mth.im_func.func_defaults
+            d = mth.__func__.__defaults__
             if d is not None:
                 mthlevel = d[0]
             else:
@@ -453,7 +456,7 @@ class NumpyTest:
     def _test_suite_from_modules(self, this_package, level, verbosity):
         package_name = this_package.__name__
         modules = []
-        for name, module in sys.modules.items():
+        for name, module in list(sys.modules.items()):
             if not name.startswith(package_name) or module is None:
                 continue
             if not hasattr(module,'__file__'):
@@ -480,7 +483,7 @@ class NumpyTest:
 
         # Find all tests/ directories under the package
         test_dirs_names = {}
-        for name, module in sys.modules.items():
+        for name, module in list(sys.modules.items()):
             if not name.startswith(package_name) or module is None:
                 continue
             if not hasattr(module, '__file__'):
@@ -496,7 +499,7 @@ class NumpyTest:
             test_dir_module = '.'.join(name.split('.')[:-1]+['tests'])
             test_dirs_names[d] = test_dir_module
 
-        test_dirs = test_dirs_names.keys()
+        test_dirs = list(test_dirs_names.keys())
         test_dirs.sort()
 
         # For each file in each tests/ directory with a test case in it,

@@ -1,3 +1,7 @@
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
+from past.utils import old_div
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -19,7 +23,7 @@
 
 import numpy
 import time
-import DS9
+from . import DS9
 from os import access, R_OK
 from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import DS9Err
@@ -110,8 +114,8 @@ def _set_wcs(keys):
 
         if eqpos is not None:
             wcdelt = wcdelt * pcdelt
-            wcrpix = ((wcrpix - pcrval) /
-                      pcdelt + pcrpix )
+            wcrpix = (old_div((wcrpix - pcrval),
+                      pcdelt) + pcrpix )
 
     if eqpos is not None:
         # join together all strings with a '\n' between each

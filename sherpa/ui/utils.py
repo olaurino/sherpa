@@ -1,3 +1,10 @@
+from __future__ import division
+from __future__ import print_function
+from future import standard_library
+standard_library.install_aliases()
+from builtins import input
+from builtins import str
+from past.utils import old_div
 #
 #  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
@@ -21,8 +28,8 @@ import copy
 from past.builtins import basestring
 
 try:
-    import copy_reg
-    import cPickle as pickle
+    import copyreg
+    import pickle as pickle
 except ImportError:
     import copyreg as copy_reg
     import pickle
@@ -106,7 +113,7 @@ def _send_to_pager(all, filename=None, clobber=False):
     clobber = sherpa.utils.bool_cast(clobber)
     try:
         if filename is None:
-            if (os.environ.has_key('PAGER') == True):
+            if (('PAGER' in os.environ) == True):
                 pager = os.popen(os.environ['PAGER'], 'w')
             else:
                 if (os.access('/bin/more', os.X_OK) == 1):
@@ -119,7 +126,7 @@ def _send_to_pager(all, filename=None, clobber=False):
         # check if filename is StringIO obj
         elif hasattr(filename, 'write'):
             pager = filename
-            print >> pager, all
+            print(all, file=pager)
             return
 
         else:
@@ -127,7 +134,7 @@ def _send_to_pager(all, filename=None, clobber=False):
             if os.path.isfile(filename) and not clobber:
                 raise IOErr('filefound', filename)
             pager = file(filename, 'w')
-        print >> pager, all
+        print(all, file=pager)
     except:
         if (pager is not None):
             pager.close()
@@ -160,8 +167,8 @@ def reduce_ufunc(func):
     return (construct_ufunc, (modname, funcname))
 
 
-copy_reg.constructor(construct_ufunc)
-copy_reg.pickle(numpy.ufunc, reduce_ufunc)
+copyreg.constructor(construct_ufunc)
+copyreg.pickle(numpy.ufunc, reduce_ufunc)
 
 
 ###############################################################################
@@ -268,7 +275,7 @@ class Session(NoNewAttributesAfterInit):
                 allnames.append(name)
 
         gdict.update(self._model_types)
-        allnames.extend(self._model_types.keys())
+        allnames.extend(list(self._model_types.keys()))
 
         return allnames
 
@@ -316,7 +323,7 @@ class Session(NoNewAttributesAfterInit):
                      sherpa.estmethods.EstMethod)
         objdicts = (self._methods, self._stats, self._estmethods)
 
-        for mod, base, odict in izip(modules, basetypes, objdicts):
+        for mod, base, odict in zip(modules, basetypes, objdicts):
             for name in mod.__all__:
                 cls = getattr(mod, name)
                 if _is_subclass(cls, base):
@@ -538,7 +545,7 @@ class Session(NoNewAttributesAfterInit):
         # obj.__dict__ should not clobber new classes!
         dicts = [self._methods, self._stats, self._estmethods]
         names = ['_methods', '_stats', '_estmethods']
-        for name, dic in izip(names, dicts):
+        for name, dic in zip(names, dicts):
             # update current session with user definitions
             dic.update(obj.__dict__[name])
             # remove old items from pickle
@@ -548,7 +555,7 @@ class Session(NoNewAttributesAfterInit):
         self.__dict__.update(obj.__dict__)
 
         if self._model_autoassign_func is not None:
-            for name, cmpt in self._model_components.items():
+            for name, cmpt in list(self._model_components.items()):
                 self._model_autoassign_func(name, cmpt)
 
     def _get_show_data(self, id=None):
@@ -586,7 +593,7 @@ class Session(NoNewAttributesAfterInit):
     def _get_show_source(self, id=None):
         model_str = ''
         ids = self.list_data_ids()
-        src_ids = self._sources.keys()
+        src_ids = list(self._sources.keys())
         if id is not None:
             ids = [self._fix_id(id)]
         for id in ids:
@@ -601,7 +608,7 @@ class Session(NoNewAttributesAfterInit):
         if id is not None:
             ids = [self._fix_id(id)]
         for id in ids:
-            if id in self._psf.keys():
+            if id in list(self._psf.keys()):
                 kernel_str += 'PSF Kernel: %s\n' % id
                 # Show the PSF parameters
                 kernel_str += self.get_psf(id).__str__() + '\n\n'
@@ -613,7 +620,7 @@ class Session(NoNewAttributesAfterInit):
         if id is not None:
             ids = [self._fix_id(id)]
         for id in ids:
-            if id in self._psf.keys():
+            if id in list(self._psf.keys()):
                 psf_str += 'PSF Model: %s\n' % id
                 # Show the PSF dataset or PSF model
                 psf_str += self.get_psf(id).kernel.__str__() + '\n\n'
@@ -1384,7 +1391,7 @@ class Session(NoNewAttributesAfterInit):
             return self._default_id
         if not self._valid_id(id):
             raise ArgumentTypeErr('intstr')
-        if id in self._plot_types.keys() or id in self._contour_types.keys():
+        if id in list(self._plot_types.keys()) or id in list(self._contour_types.keys()):
             raise IdentifierErr('badid', id)
         return id
 
@@ -1492,7 +1499,7 @@ class Session(NoNewAttributesAfterInit):
         ['gridsearch', 'levmar', 'moncar', 'neldermead', 'simplex']
 
         """
-        keys = self._methods.keys()[:]
+        keys = list(self._methods.keys())[:]
         keys.sort()
         return keys
 
@@ -1833,7 +1840,7 @@ class Session(NoNewAttributesAfterInit):
         ['none', 'primini', 'sigmarej']
 
         """
-        keys = self._itermethods.keys()[:]
+        keys = list(self._itermethods.keys())[:]
         keys.sort()
         return keys
 
@@ -2039,7 +2046,7 @@ class Session(NoNewAttributesAfterInit):
          'wstat']
 
         """
-        keys = self._stats.keys()[:]
+        keys = list(self._stats.keys())[:]
         keys.sort()
         return keys
 
@@ -2248,7 +2255,7 @@ class Session(NoNewAttributesAfterInit):
         ['nucleus', 'jet']
 
         """
-        keys = self._data.keys()[:]
+        keys = list(self._data.keys())[:]
         keys.sort()
         return keys
 
@@ -4584,9 +4591,9 @@ class Session(NoNewAttributesAfterInit):
         """
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr(lo, **kwargs)
-        if self._data.items() == []:
+        if list(self._data.items()) == []:
             raise IdentifierErr("nodatasets")
-        for d in self._data.values():
+        for d in list(self._data.values()):
             d.notice(lo, hi, **kwargs)
 
     def ignore(self, lo=None, hi=None, **kwargs):
@@ -5049,7 +5056,7 @@ class Session(NoNewAttributesAfterInit):
          'accretiondisk']
 
         """
-        keys = self._model_types.keys()[:]
+        keys = list(self._model_types.keys())[:]
         keys.sort()
 
         show = show.strip().lower()
@@ -5059,11 +5066,11 @@ class Session(NoNewAttributesAfterInit):
                 keys.remove(item)
 
         if show.startswith("xspec"):
-            return filter(lambda x: x.startswith('xs'), keys)
+            return [x for x in keys if x.startswith('xs')]
         elif show.startswith("1d"):
-            return filter(lambda x: (not x.startswith('xs')) and (not x.endswith("2d")), keys)
+            return [x for x in keys if (not x.startswith('xs')) and (not x.endswith("2d"))]
         elif show.startswith("2d"):
-            return filter(lambda x: x.endswith('2d'), keys)
+            return [x for x in keys if x.endswith('2d')]
 
         return keys
 
@@ -5117,7 +5124,7 @@ class Session(NoNewAttributesAfterInit):
         True
 
         """
-        keys = self._model_components.keys()[:]
+        keys = list(self._model_components.keys())[:]
         keys.sort()
         return keys
 
@@ -5340,7 +5347,7 @@ class Session(NoNewAttributesAfterInit):
         """
         ids = [id]
         if id is None:
-            ids = self._sources.keys()
+            ids = list(self._sources.keys())
 
         if model is None:
             for id in ids:
@@ -5431,8 +5438,8 @@ class Session(NoNewAttributesAfterInit):
         set_model : Set the source model expression for a data set.
 
         """
-        keys = self._models.keys()[:]
-        keys.extend(self._sources.keys()[:])
+        keys = list(self._models.keys())[:]
+        keys.extend(list(self._sources.keys())[:])
         keys = list(set(keys))
         keys.sort()
         return keys
@@ -5582,7 +5589,7 @@ class Session(NoNewAttributesAfterInit):
         if self._paramprompt:
             for par in pars:
                 while True:
-                    input = raw_input("%s parameter value [%g] " %
+                    input = input("%s parameter value [%g] " %
                                       (par.fullname, par.val))
                     if input != "":
                         val = min = max = None
@@ -6184,7 +6191,7 @@ class Session(NoNewAttributesAfterInit):
         modelflags = None
         parnames = names[:]
         parvals = []
-        for name, col in izip(names, cols):
+        for name, col in zip(names, cols):
             # Find the column with the filenames, remove it from the set of
             # parameter names
             if name.startswith('file'):
@@ -6616,7 +6623,7 @@ class Session(NoNewAttributesAfterInit):
         userstat = sherpa.stats.UserStat(calc_stat_func,
                                          calc_err_func, statname)
         if priors:
-            pars = [(key, priors.pop(key)) for key in priors.keys()
+            pars = [(key, priors.pop(key)) for key in list(priors.keys())
                     if isinstance(priors[key], sherpa.models.Parameter)]
             pars = dict(pars)
             userstat = sherpa.logposterior.Prior(calc_stat_func, priors, pars)
@@ -7427,7 +7434,7 @@ class Session(NoNewAttributesAfterInit):
 
         output = []
         if len(datasets) > 1:
-            for id, d, m in izip(ids, datasets, models):
+            for id, d, m in zip(ids, datasets, models):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
@@ -11247,7 +11254,7 @@ class Session(NoNewAttributesAfterInit):
             return
 
         nrows = 2
-        ncols = int((len(plots) + 1) / 2.0)
+        ncols = int(old_div((len(plots) + 1), 2.0))
         sp = self._splitplot
         sp.reset(nrows, ncols)
         plotmeth = getattr(sp, 'add' + plotmeth)
@@ -11301,7 +11308,7 @@ class Session(NoNewAttributesAfterInit):
             sherpa.plot.end()
 
     def _set_plot_item(self, plottype, item, value):
-        keys = self._plot_types.keys()[:]
+        keys = list(self._plot_types.keys())[:]
 
         if plottype.strip().lower() != "all":
             if plottype not in keys:
@@ -12428,9 +12435,9 @@ class Session(NoNewAttributesAfterInit):
                                     clearwindow=clearwindow)
 
             oldval = dp.plot_prefs['xlog']
-            if ((self._dataplot.plot_prefs.has_key('xlog') and
+            if (('xlog' in self._dataplot.plot_prefs and
                  self._dataplot.plot_prefs['xlog']) or
-                (self._modelplot.plot_prefs.has_key('xlog') and
+                ('xlog' in self._modelplot.plot_prefs and
                  self._modelplot.plot_prefs['xlog'])):
                 dp.plot_prefs['xlog'] = True
 
@@ -13644,10 +13651,10 @@ class Session(NoNewAttributesAfterInit):
     def _int_plot(self, plotobj, par, **kwargs):
         prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
         plot_dict = sherpa.utils.get_keyword_defaults(plotobj.plot)
-        for key in kwargs.keys():
-            if prepare_dict.has_key(key):
+        for key in list(kwargs.keys()):
+            if key in prepare_dict:
                 prepare_dict[key] = kwargs[key]
-            if plot_dict.has_key(key):
+            if key in plot_dict:
                 plot_dict[key] = kwargs[key]
 
         if sherpa.utils.bool_cast(kwargs['replot']):
@@ -13899,10 +13906,10 @@ class Session(NoNewAttributesAfterInit):
     def _reg_plot(self, plotobj, par0, par1, **kwargs):
         prepare_dict = sherpa.utils.get_keyword_defaults(plotobj.prepare)
         cont_dict = sherpa.utils.get_keyword_defaults(plotobj.contour)
-        for key in kwargs.keys():
-            if prepare_dict.has_key(key):
+        for key in list(kwargs.keys()):
+            if key in prepare_dict:
                 prepare_dict[key] = kwargs[key]
-            if cont_dict.has_key(key):
+            if key in cont_dict:
                 cont_dict[key] = kwargs[key]
 
         if sherpa.utils.bool_cast(kwargs['replot']):

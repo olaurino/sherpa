@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import map
+from builtins import range
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -80,23 +83,22 @@ def _move_within_limits(x, xmin, xmax):
         x[above] = xmax[above]
 
 def _my_is_nan( x ):
-    fubar = filter( lambda xx: xx != xx or xx is numpy.nan or numpy.isnan(xx) and numpy.isfinite(xx), x )
+    fubar = [xx for xx in x if xx != xx or xx is numpy.nan or numpy.isnan(xx) and numpy.isfinite(xx)]
     return len( list(fubar) )
 
 def _narrow_limits( myrange, xxx, debug ):
 
     def double_check_limits( myx, myxmin, myxmax ):
-        for my_l,my_x,my_h in izip( myxmin, myx, myxmax ):
+        for my_l,my_x,my_h in zip( myxmin, myx, myxmax ):
             if my_x < my_l:
-                print('x = ', my_x, ' is < lower limit = ', my_l)
+                print(('x = ', my_x, ' is < lower limit = ', my_l))
             if my_x > my_h:
-                print('x = ', my_x, ' is > upper limit = ', my_h)
+                print(('x = ', my_x, ' is > upper limit = ', my_h))
 
     def raise_min_limit( range, xmin, x, debug=False ):
-        myxmin = numpy.asarray( map( lambda xx: xx - range * numpy.abs(xx),
-                                     x ), numpy.float_ )
+        myxmin = numpy.asarray( [xx - range * numpy.abs(xx) for xx in x], numpy.float_ )
         if False != debug:
-            print
+            print()
             print('raise_min_limit: myxmin=%s' % myxmin)
             print('raise_min_limit: x=%s' % x)
         below = numpy.flatnonzero(myxmin < xmin)
@@ -105,14 +107,13 @@ def _narrow_limits( myrange, xxx, debug ):
         if False != debug:
             print('raise_min_limit: myxmin=%s' % myxmin)
             print('raise_min_limit: x=%s' % x)
-            print
+            print()
         return myxmin
 
     def lower_max_limit( range, x, xmax, debug=False ):
-        myxmax = numpy.asarray( map( lambda xx: xx + range * numpy.abs(xx),
-                                     x ), numpy.float_ )
+        myxmax = numpy.asarray( [xx + range * numpy.abs(xx) for xx in x], numpy.float_ )
         if False != debug:
-            print
+            print()
             print('lower_max_limit: x=%s' % x)
             print('lower_max_limit: myxmax=%s' % myxmax)
         above = numpy.flatnonzero(myxmax > xmax)
@@ -121,7 +122,7 @@ def _narrow_limits( myrange, xxx, debug ):
         if False != debug:
             print('lower_max_limit: x=%s' % x)
             print('lower_max_limit: myxmax=%s' % myxmax)
-            print
+            print()
         return myxmax
 
     x = xxx[ 0 ]
@@ -297,11 +298,11 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
             list_ranges[ ii ] = slice( *list_ranges[ ii ] )
         grid = numpy.mgrid[ list_ranges ]
         mynfev = pow( N, npar )
-        grid = map( numpy.ravel, grid )
+        grid = list(map( numpy.ravel, grid ))
         sequence = []
-        for index in xrange( mynfev ):
+        for index in range( mynfev ):
             tmp = []
-            for xx in xrange( npar ):
+            for xx in range( npar ):
                 tmp.append( grid[ xx ][ index ] )
             sequence.append( tmp )
         return sequence
@@ -311,7 +312,7 @@ def grid_search( fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 
     if sequence is None:
         ranges = []
-        for index in xrange( npar ):
+        for index in range( npar ):
             ranges.append( [ xmin[ index ], xmax[ index ] ] )
         sequence = make_sequence( ranges, num )
     else:
@@ -368,7 +369,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
           maxfev=None, epsfcn=EPSILON, factor=100.0, verbose=0):
 
     def par_at_boundary( low, val, high, tol ):
-        for par_min, par_val, par_max in izip( low, val, high ):
+        for par_min, par_val, par_max in zip( low, val, high ):
             if sao_fcmp( par_val, par_min, tol ) == 0:
                 return True
             if sao_fcmp( par_val, par_max, tol ) == 0:
@@ -506,7 +507,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     rv = (status, x, fval)
     print_covar_err = False
     if print_covar_err and 0 == ifault and numpy.any( var > 0.0 ):
-        var = map( lambda x: x * numpy.sqrt(2.0), var )
+        var = [x * numpy.sqrt(2.0) for x in var]
         rv += (msg, {'covarerr': numpy.sqrt(var), 'info': ifault,
                      'nfev': neval})
     else:
@@ -560,9 +561,9 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         ############################# NelderMead #############################
         mymaxfev = min( maxfev_per_iter, maxfev )
         if all( x == 0.0 ):
-            mystep = map( lambda fubar: 1.2 + fubar, x )
+            mystep = [1.2 + fubar for fubar in x]
         else: 
-            mystep = map( lambda fubar: 1.2 * fubar, x )
+            mystep = [1.2 * fubar for fubar in x]
         result = neldermead( myfcn, x, xmin, xmax, maxfev=mymaxfev, ftol=ftol,
                              finalsimplex=9, step=mystep )
         x = numpy.asarray( result[ 1 ], numpy.float_ )
@@ -625,9 +626,9 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     covarerr = None
     if nfev < maxfev:
         if all( x == 0.0 ):
-            mystep = map( lambda fubar: 1.2 + fubar, x )
+            mystep = [1.2 + fubar for fubar in x]
         else: 
-            mystep = map( lambda fubar: 1.2 * fubar, x )
+            mystep = [1.2 * fubar for fubar in x]
         result = neldermead( fcn, x, xmin, xmax,
                              maxfev=min( 512*len(x), maxfev - nfev ),
                              ftol=ftol, finalsimplex=9, step=mystep )

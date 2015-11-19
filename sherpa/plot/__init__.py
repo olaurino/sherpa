@@ -23,6 +23,9 @@ A visualization interface to Sherpa
 
 
 from __future__ import division
+from builtins import str
+from builtins import range
+from builtins import object
 import os
 import logging
 warning = logging.getLogger(__name__).warning
@@ -1339,13 +1342,13 @@ class Confidence1D(DataPlot):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('stat'):
+        if 'stat' not in state:
             self.__dict__['stat'] = None
 
-        if not state.has_key('parval'):
+        if 'parval' not in state:
             self.__dict__['parval'] = None
 
-        if not state.has_key('numcores'):
+        if 'numcores' not in state:
             self.__dict__['numcores'] = None
 
     def __str__(self):
@@ -1498,10 +1501,10 @@ class Confidence2D(DataContour, Point):
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-        if not state.has_key('stat'):
+        if 'stat' not in state:
             self.__dict__['stat'] = None
 
-        if not state.has_key('numcores'):
+        if 'numcores' not in state:
             self.__dict__['numcores'] = None
 
 
@@ -1700,7 +1703,7 @@ class Confidence2D(DataContour, Point):
             self.contour_prefs['ylog']=False
 
 
-class eval_proj2():
+class eval_proj2(object):
     def __init__(self, log, par, thawed, fit):
         self.log = log
         self.par = par
@@ -1798,7 +1801,7 @@ class IntervalProjection(Confidence1D):
             fit.method = oldfitmethod
 
 
-class eval_uncert0():
+class eval_uncert0(object):
     def __init__(self, log, par, fit):
         self.log = log
         self.par = par
@@ -1845,7 +1848,7 @@ class IntervalUncertainty(Confidence1D):
             fit.model.thawedpars = oldpars
 
 
-class eval_proj():
+class eval_proj(object):
     def __init__(self, log, par0, par1, thawed, fit):
         self.log = log
         self.par0 = par0
@@ -1954,7 +1957,7 @@ class RegionProjection(Confidence2D):
             fit.method = oldfitmethod
 
 
-class eval_uncert():
+class eval_uncert(object):
     def __init__(self, log, par0, par1, fit):
         self.log = log
         self.par0 = par0

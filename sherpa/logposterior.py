@@ -49,7 +49,7 @@ class Prior(Likelihood):
 
         # Posterior hyper-parameters
         self.hyperpars = []
-        for key in hyperpars.keys():
+        for key in list(hyperpars.keys()):
             val = hyperpars[key]
             param = Parameter(name, key, val, alwaysfrozen=True)
             self.__dict__[key] = param
@@ -57,7 +57,7 @@ class Prior(Likelihood):
 
         # References to parameters in source model
         self.pars = []
-        for key in pars.keys():
+        for key in list(pars.keys()):
             self.__dict__[key] = pars[key]
             self.pars.append(pars[key])
 

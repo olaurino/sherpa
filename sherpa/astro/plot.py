@@ -20,6 +20,10 @@
 """
 Classes for plotting, analysis of astronomical data sets
 """
+from __future__ import division
+from builtins import str
+from builtins import hex
+from past.utils import old_div
 
 from sherpa.astro.data import DataPHA
 from sherpa.plot import DataPlot, ModelPlot, FitPlot, DelchiPlot, ResidPlot, \
@@ -70,8 +74,8 @@ class ModelHistogram(HistogramPlot):
             self.xlo = data.apply_filter(elo, data._min)
             self.xhi = data.apply_filter(ehi, data._max)
             if data.units == 'wavelength':
-                self.xlo = data._hc/self.xlo
-                self.xhi = data._hc/self.xhi
+                self.xlo = old_div(data._hc,self.xlo)
+                self.xhi = old_div(data._hc,self.xhi)
 
         finally:
             if old_group:
@@ -247,8 +251,8 @@ class ARFPlot(HistogramPlot):
                 raise PlotErr('notpha', data.name)
             if data.units == "wavelength":
                 self.xlabel = 'Wavelength (Angstrom)'
-                self.xlo = data._hc/self.xlo
-                self.xhi = data._hc/self.xhi
+                self.xlo = old_div(data._hc,self.xlo)
+                self.xhi = old_div(data._hc,self.xhi)
 
 
 class BkgDataPlot(DataPlot):
@@ -334,7 +338,7 @@ class OrderPlot(ModelHistogram):
             top_color = '0xffffff'
             bot_color = '0x0000bf'
             num = len(self.orders)
-            jump = (int(top_color, 16) - int(bot_color,16))/(num+1)
+            jump = old_div((int(top_color, 16) - int(bot_color,16)),(num+1))
             for order in self.orders:
                 self.colors.append(top_color)
                 top_color = hex(int(top_color,16)-jump)
@@ -362,8 +366,8 @@ class OrderPlot(ModelHistogram):
                 xlo = data.apply_filter(elo, data._min)
                 xhi = data.apply_filter(ehi, data._max)
                 if data.units == 'wavelength':
-                    xlo = data._hc/xlo
-                    xhi = data._hc/xhi
+                    xlo = old_div(data._hc,xlo)
+                    xhi = old_div(data._hc,xhi)
             else:
                 xhi = xlo + 1.
 
@@ -395,7 +399,7 @@ class OrderPlot(ModelHistogram):
     def plot(self, overplot=False, clearwindow=True):
         default_color = self.histo_prefs['linecolor']
         count = 0
-        for xlo, xhi, y, color in izip(self.xlo, self.xhi, self.y, self.colors):
+        for xlo, xhi, y, color in zip(self.xlo, self.xhi, self.y, self.colors):
             if count != 0:
                 overplot=True
                 self.histo_prefs['linecolor']=color
@@ -439,7 +443,7 @@ class FluxHistogram(ModelHistogram):
         self.modelvals = asarray(fluxes[:,1:])
         self.xlo, self.xhi = dataspace1d(y.min(), y.max(), numbins=bins+1)[:2]
         y = histogram1d(y, self.xlo, self.xhi)
-        self.y = y/float(y.max())
+        self.y = old_div(y,float(y.max()))
 
 
 class EnergyFluxHistogram(FluxHistogram):

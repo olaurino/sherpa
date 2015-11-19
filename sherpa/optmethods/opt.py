@@ -1,3 +1,8 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import range
+from past.utils import old_div
+from builtins import object
 # 
 #  Copyright (C) 2009,2010  Smithsonian Astrophysical Observatory
 #
@@ -126,7 +131,7 @@ class Polytope( Opt ):
             x0 = self.polytope[ 0, :-1 ]
 
             npar_plus_1 = len( x0 ) + 1
-            for ii in xrange( 1, npar_plus_1 ):
+            for ii in range( 1, npar_plus_1 ):
                 xi = self.polytope[ ii, :-1 ]
                 xi_x0 = xi - x0
                 max_xi_x0 = max( max_xi_x0, numpy.dot( xi_x0, xi_x0 ) )
@@ -151,7 +156,7 @@ class Polytope( Opt ):
 
         num = 2.0 * abs( self.polytope[ 0, -1 ] - self.polytope[ -1, -1 ] )
         denom = abs( self.polytope[ 0, -1 ] ) + abs( self.polytope[ -1, -1 ] ) + 1.0
-        if ( num / denom > tolerance ):
+        if ( old_div(num, denom) > tolerance ):
             return False
         func_vals = self.get_func_vals( )
         if numpy.std( func_vals ) > tolerance:
@@ -172,7 +177,7 @@ class Polytope( Opt ):
                 #self.polytope[ badindex ] = outside_contraction_pt[ : ]
                 self.replace_vertex( badindex, outside_contraction_pt )
                 if verbose:
-                    print '\taccept outside contraction point'
+                    print('\taccept outside contraction point')
                 return False
             else:
                 return True
@@ -188,13 +193,13 @@ class Polytope( Opt ):
                 #self.polytope[ badindex ] = inside_contraction_pt[ : ]
                 self.replace_vertex( badindex, inside_contraction_pt )
                 if verbose:
-                    print '\taccept inside contraction point'
+                    print('\taccept inside contraction point')
                 return False
             else:
                 return True
 
         else:
-            print 'something is wrong with contract_in_out'
+            print('something is wrong with contract_in_out')
             return True
 
     def get_func_vals( self ):
@@ -214,19 +219,19 @@ class Polytope( Opt ):
         simplex = numpy.zeros( (npar_plus_1,npar_plus_1), dtype=numpy.float_ )
         if step is None:
             step = 0.4*numpy.ones(x.shape, numpy.float_, numpy.isfortran(x))
-        for ii in xrange( npar_plus_1 ):
+        for ii in range( npar_plus_1 ):
             simplex[ ii , :-1 ] = numpy.array( x, copy=True )
         if 0 == initsimplex:
-            for ii in xrange( npar ):
+            for ii in range( npar ):
                 simplex[ ii + 1 ,  ii ] += step[ ii ]
         else:
             delta = 0.05
-            for ii in xrange( nparx ):
+            for ii in range( nparx ):
                 if 0.0 == simplex[ ii + 1 ,  ii ]:
                     simplex[ ii + 1 ,  ii ] = delta
                 else:
                     simplex[ ii + 1 ,  ii ] *= (1.0+delta)
-        for ii in xrange( npar + 1 ):
+        for ii in range( npar + 1 ):
             simplex[ ii , -1 ] = self.fcn( simplex[ ii , :-1 ] )
         return simplex
 
@@ -237,17 +242,17 @@ class Polytope( Opt ):
 
     def replace_vertex( self, badindex, newvertex ):
         if newvertex[ -1 ] < 0.95 * self.polytope[0,-1]:
-            print 'polytope[0]=', self.polytope[0,-1], '\tpolytope[', badindex, ']=', self.polytope[badindex,-1]
+            print('polytope[0]=', self.polytope[0,-1], '\tpolytope[', badindex, ']=', self.polytope[badindex,-1])
             #result = dmnfb( self.fcn, newvertex[ :-1 ], self.xmin, self.xmax )
             #result = newuoa( self.fcn, newvertex[ :-1 ], self.xmin, self.xmax )
             newvertex[ :-1 ] = numpy.asarray( result[ 1 ], numpy.float_ )
             newvertex[ -1 ] = result[ 2 ]
-            print 'f(%s)=%f' % (newvertex[:-1],newvertex[-1])
+            print('f(%s)=%f' % (newvertex[:-1],newvertex[-1]))
         self.polytope[ badindex ] = newvertex[ : ]
 
     def shrink( self, shrink_coef, npar ):
         npars_plus_1 = npar + 1
-        for ii in xrange( 1, npars_plus_1 ):
+        for ii in range( 1, npars_plus_1 ):
             self.polytope[ ii ] = self.polytope[ 0 ] + shrink_coef * ( self.polytope[ ii ] - self.polytope[ 0 ] )
             self.polytope[ ii, -1 ] = self.fcn( self.polytope[ ii, :-1 ] )
 
@@ -305,7 +310,7 @@ class classicNelderMead( DirectSearch ):
                         #simplex[ badindex ] = reflection_pt[ : ]
                         simplex.replace_vertex( badindex, reflection_pt )
                         if verbose:
-                            print '\taccept reflection point'
+                            print('\taccept reflection point')
 
                     elif reflection_pt[ -1 ] < simplex[ 0, -1 ]:
 
@@ -317,12 +322,12 @@ class classicNelderMead( DirectSearch ):
                             #simplex[ badindex ] = expansion_pt[ : ]
                             simplex.replace_vertex( badindex, expansion_pt )
                             if verbose:
-                                print '\taccept expansion point'
+                                print('\taccept expansion point')
                         else:
                             #simplex[ badindex ] = reflection_pt[ : ]
                             simplex.replace_vertex( badindex, reflection_pt )
                             if verbose:
-                                print '\taccept reflection point'
+                                print('\taccept reflection point')
 
                     else: 
 
@@ -354,7 +359,7 @@ class classicNelderMead( DirectSearch ):
                 polytope.order_simplex( )
 
                 if verbose:
-                    print 'f%s=%f' % (polytope[ 0, :-1 ],polytope[ 0, -1 ])
+                    print('f%s=%f' % (polytope[ 0, :-1 ],polytope[ 0, -1 ]))
 
                 if polytope.check_convergence( tol, finalsimplex ):
                     break
@@ -363,7 +368,7 @@ class classicNelderMead( DirectSearch ):
                     badindex = multiprocessing.cpu_count()
                     if badindex == npar:
                         badindex = 1
-                    bad_vertices = range( npar, npar - badindex, -1 )
+                    bad_vertices = list(range( npar, npar - badindex, -1))
 
                     results = divide_run_parallel( optimize, bad_vertices,
                                                    polytope.fcn, npar,
@@ -373,8 +378,8 @@ class classicNelderMead( DirectSearch ):
                                         polytope.polytope.ravel( ) )
 
                 datasize = npar * ( npar + 2 ) + 4
-                nrow = results.size / datasize
-                ncol = results.size / nrow
+                nrow = old_div(results.size, datasize)
+                ncol = old_div(results.size, nrow)
                 results = results.reshape( nrow, ncol )
 
                 num_not_modified = 0
@@ -394,7 +399,7 @@ class classicNelderMead( DirectSearch ):
                 if num_not_modified == len( bad_vertices ):
                     polytope.shrink( self.shrink_coef, npar )
                     if verbose:
-                        print '\tshrink'
+                        print('\tshrink')
 
             ierr = 0
             if mynfev >= maxfev:
@@ -461,7 +466,7 @@ def optneldermead( afcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             if 0 != result[ 0 ]:
                 return result[0], result[1], result[2], mynfev
             if debug:
-                print 'neldermead::myloop: result = ', result, ' took ', time.time() - starttime, ' secs'
+                print('neldermead::myloop: result = ', result, ' took ', time.time() - starttime, ' secs')
         if multicore:
             return result[0], result[1], result[2], mynfev + nfev[0]
         else:
@@ -476,8 +481,8 @@ def optneldermead( afcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                0 == Knuth_close( fnew, fold, ftol ) and \
                0 == result[0] and mynfev < mymaxfev:
             if debug:
-                print 'neldermead: fnew = ', fnew, '\tfold = ', fold, \
-                      '\tx = ', result[ 1 ]
+                print('neldermead: fnew = ', fnew, '\tfold = ', fold, \
+                      '\tx = ', result[ 1 ])
             result = myneldermead( result[ 1 ], mymaxfev - mynfev, step,
                                    fold=fnew )
             mynfev += result[ 3 ]
@@ -508,7 +513,7 @@ class DifEvo( Polytope ):
             x0 = polytope[ 0, :-1 ]
 
             npar_plus_1 = len( x0 ) + 1
-            for ii in xrange( 1, npar_plus_1 ):
+            for ii in range( 1, npar_plus_1 ):
                 xi = polytope[ ii, :-1 ]
                 xi_x0 = xi - x0
                 max_xi_x0 = max( max_xi_x0, numpy.dot( xi_x0, xi_x0 ) )
@@ -525,20 +530,20 @@ class DifEvo( Polytope ):
         population = numpy.zeros( (population_size, npar + 1),
                                   dtype=numpy.float_ )
         random.seed( seed )
-        for ii in xrange( population_size - 1 ):
-            for jj in xrange( npar ):
+        for ii in range( population_size - 1 ):
+            for jj in range( npar ):
                 population[ ii, jj ] = random.uniform( xmin[ jj ],
                                                          xmax[ jj ] )
         population[ population_size - 1, :-1 ] = x[ : ]
 
-        for ii in xrange( population_size ):
+        for ii in range( population_size ):
             population[ ii, -1 ] = self.fcn( population[ ii, :-1 ] )
             #print 'f%s=%f' % (population[ ii, :-1 ], population[ ii, -1 ])
         return population, population[ population_size - 1, -1 ]
 
     def select_samples( self, candidate, population_size, n ):
 
-        mysample = random.sample( xrange( population_size ), n )
+        mysample = random.sample( range( population_size ), n )
         #print 'select_samples: mysample = ', mysample
         if is_in( candidate, mysample ):
             return self.select_samples( candidate, population_size, n )
@@ -552,7 +557,7 @@ class DifEvo( Polytope ):
         r = self.select_samples( candidate, population_size, 2 )
         n = random.randint( 0, npar - 1 )
 
-        for ii in xrange( npar ):
+        for ii in range( npar ):
             if random.random() >= xprob:
                 return
             self.trial_solution[ n ] = model_par[ n ] + \
@@ -580,7 +585,7 @@ class DifEvo( Polytope ):
 
         model_par = x[ : ]
         while self.nfev[ 0 ] < maxnfev:
-            for candidate in xrange( population_size ):
+            for candidate in range( population_size ):
 
                 self.trial_solution[ : ] = polytope[ candidate ][ : ]
                 strategy_function( candidate, polytope, model_par,
@@ -593,9 +598,9 @@ class DifEvo( Polytope ):
 
                         if use_local_opt:
                             if debug:
-                                print 'before nm: f%s=%f' % \
+                                print('before nm: f%s=%f' % \
                                       ( self.trial_solution[ :-1 ], \
-                                        self.trial_solution[ -1 ] )
+                                        self.trial_solution[ -1 ] ))
 
                             result = sherpa_neldermead( self.fcn,
                                                         self.trial_solution[ :-1 ],
@@ -609,9 +614,9 @@ class DifEvo( Polytope ):
                             fstat = result[ 2 ]
 
                             if debug:
-                                print 'after nm: f%s=%f' % \
-                                      ( result[ 1 ], result[ 2 ])
-                                print
+                                print('after nm: f%s=%f' % \
+                                      ( result[ 1 ], result[ 2 ]))
+                                print()
 
                         else:
                             model_par[ : ] = self.trial_solution[ :-1 ]
@@ -644,8 +649,8 @@ def difevo( fcn, x0, xmin, xmax, maxfev=None, ftol=EPSILON,xprob=0.9,
                                    maxfev=maxfev, initsimplex=0,
                                    finalsimplex=9, step=None, verbose=0)
 
-    print nm_result
-    print '%f secs' % ( time.time( ) - starttime )
+    print(nm_result)
+    print('%f secs' % ( time.time( ) - starttime ))
 
     if nm_result[0]:
 
@@ -660,8 +665,8 @@ def difevo( fcn, x0, xmin, xmax, maxfev=None, ftol=EPSILON,xprob=0.9,
         starttime = time.time()
         de_result = dif_evo( myx, myxmin, myxmax, maxfev_per_iter, ftol,
                              population_size, xprob, weighting_factor )
-        print de_result
-        print '%f secs' % ( time.time( ) - starttime )
+        print(de_result)
+        print('%f secs' % ( time.time( ) - starttime ))
 
         de_result = list( de_result )
         de_result[ -1 ] += nm_result[4].get( 'nfev' )
@@ -674,7 +679,7 @@ def difevo( fcn, x0, xmin, xmax, maxfev=None, ftol=EPSILON,xprob=0.9,
 def FreudensteinRoth( x ):
     npar = len( x )
     sum = 0.0
-    for ii in xrange( 0, npar, 2 ):
+    for ii in range( 0, npar, 2 ):
         fx0 = - 13.0 + x[ ii ] + x[ ii + 1 ] * (( 5.0 - x[ ii + 1 ] ) * x[ ii + 1 ] - 2.0 )
         fx1 = - 29.0 + x[ ii ] + x[ ii + 1 ] * (( x[ ii + 1 ] + 1.0 ) * x[ ii + 1 ] - 14.0 )
         sum += fx0*fx0 + fx1*fx1
@@ -702,12 +707,12 @@ def tst_prob0( multicore ):
     initsimplex = 0
     finalsimplex = 0
     starttime = time.time( )
-    print neldermead( prob0, x0, xmin, xmax, ftol, maxfev, initsimplex,
+    print(neldermead( prob0, x0, xmin, xmax, ftol, maxfev, initsimplex,
                       finalsimplex, step=None, verbose=False,
-                      multicore=multicore )
-    print '%f secs' % ( time.time( ) - starttime )
+                      multicore=multicore ))
+    print('%f secs' % ( time.time( ) - starttime ))
     solution = ( 0.0, 3.0e-6, 1.0e-6 )
-    print prob0( solution )
+    print(prob0( solution ))
 
 def tst_prob1( multicore ):
     def prob1( x ):
@@ -725,12 +730,12 @@ def tst_prob1( multicore ):
     initsimplex = 0
     finalsimplex = 0
     starttime = time.time( )
-    print neldermead( prob1, x0, xmin, xmax, ftol, maxfev, initsimplex,
+    print(neldermead( prob1, x0, xmin, xmax, ftol, maxfev, initsimplex,
                       finalsimplex, step=None, verbose=False,
-                      multicore=multicore )
-    print '%f secs' % ( time.time() - starttime )
+                      multicore=multicore ))
+    print('%f secs' % ( time.time() - starttime ))
     solution = ( 1.0, -2.0, 3.0 )
-    print prob1( solution )
+    print(prob1( solution ))
 
 def tst_prob2( multicore ):
     def prob2( x ):
@@ -746,12 +751,12 @@ def tst_prob2( multicore ):
     initsimplex = 0
     finalsimplex = 0
     starttime = time.time( )
-    print neldermead( prob2, x0, xmin, xmax, ftol, maxfev, initsimplex,
+    print(neldermead( prob2, x0, xmin, xmax, ftol, maxfev, initsimplex,
                       finalsimplex, step=None, verbose=False,
-                      multicore=multicore )
-    print '%f secs' % ( time.time() - starttime )
+                      multicore=multicore ))
+    print('%f secs' % ( time.time() - starttime ))
     solution = ( 0.0, 0.0 )
-    print prob2( solution )
+    print(prob2( solution ))
 
 def tst_rosen( npar, multicore ):
     x0 = npar * [ -1.2, 1.0 ]
@@ -764,10 +769,10 @@ def tst_rosen( npar, multicore ):
     initsimplex = 0
     finalsimplex = 0
     starttime = time.time( )
-    print neldermead( rosen, x0, xmin, xmax, ftol, maxfev, initsimplex,
+    print(neldermead( rosen, x0, xmin, xmax, ftol, maxfev, initsimplex,
                       finalsimplex, step=step, verbose=verbose,
-                      multicore=multicore )
-    print '%f secs' % ( time.time( ) - starttime )
+                      multicore=multicore ))
+    print('%f secs' % ( time.time( ) - starttime ))
 
 def tst_de_rosen( npar ):
     x0 = npar * [ -1.2, 1.0 ]
@@ -777,8 +782,8 @@ def tst_de_rosen( npar ):
     verbose = False
     ftol = numpy.float_(numpy.finfo(numpy.float32).eps)
     starttime = time.time( )
-    print difevo( rosen, x0, xmin, xmax, maxfev, ftol )
-    print '%f secs' % ( time.time( ) - starttime )
+    print(difevo( rosen, x0, xmin, xmax, maxfev, ftol ))
+    print('%f secs' % ( time.time( ) - starttime ))
 
 def tst_de_freudensteinroth( npar ):
     x0 = npar * [ 0.5, -2.0 ]
@@ -788,8 +793,8 @@ def tst_de_freudensteinroth( npar ):
     verbose = False
     ftol = numpy.float_(numpy.finfo(numpy.float32).eps)
     starttime = time.time( )
-    print difevo( FreudensteinRoth, x0, xmin, xmax, maxfev, ftol )
-    print '%f secs' % ( time.time( ) - starttime )
+    print(difevo( FreudensteinRoth, x0, xmin, xmax, maxfev, ftol ))
+    print('%f secs' % ( time.time( ) - starttime ))
 
 if __name__ == '__main__':
     import sys

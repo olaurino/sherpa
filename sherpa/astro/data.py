@@ -20,6 +20,11 @@
 """
 Classes for storing, inspecting, and manipulating astronomical data sets
 """
+from __future__ import division
+from builtins import filter
+from builtins import str
+from builtins import range
+from past.utils import old_div
 
 import os.path
 import numpy
@@ -99,7 +104,7 @@ class DataARF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x!='header'), self._fields)
+            self._fields = list(filter((lambda x: x!='header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -107,11 +112,11 @@ class DataARF(Data1DInt):
 
 
     def __setstate__(self, state):
-        if not state.has_key('header'):
+        if 'header' not in state:
             self.header=None
         self.__dict__.update(state)
 
-        if not state.has_key('_specresp'):
+        if '_specresp' not in state:
             self.__dict__['_specresp'] = state.get('specresp',None)
             self.__dict__['_rsp'] = state.get('specresp',None)
 
@@ -170,7 +175,7 @@ class DataRMF(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x!='header'), self._fields)
+            self._fields = list(filter((lambda x: x!='header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -178,7 +183,7 @@ class DataRMF(Data1DInt):
 
 
     def __setstate__(self, state):
-        if not state.has_key('header'):
+        if 'header' not in state:
             self.header=None
         self.__dict__.update(state)
 
@@ -335,7 +340,7 @@ class DataPHA(Data1DInt):
     def _set_response_ids(self, ids):
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'response', str(ids))
-        keys = self._responses.keys()
+        keys = list(self._responses.keys())
         for id in ids:
             if id not in keys:
                 raise DataErr('badids', str(id), 'response', str(keys))
@@ -352,7 +357,7 @@ class DataPHA(Data1DInt):
     def _set_background_ids(self, ids):
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
-        keys = self._backgrounds.keys()
+        keys = list(self._backgrounds.keys())
         for id in ids:
             if id not in keys:
                 raise DataErr('badids', str(id), 'background', str(keys))
@@ -386,7 +391,7 @@ class DataPHA(Data1DInt):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x!='header'), self._fields)
+            self._fields = list(filter((lambda x: x!='header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -404,7 +409,7 @@ class DataPHA(Data1DInt):
         self._backgrounds = state['_backgrounds']
         self._set_units(state['_units'])
 
-        if not state.has_key('header'):
+        if 'header' not in state:
             self.header=None
         self.__dict__.update(state)
 
@@ -525,8 +530,8 @@ class DataPHA(Data1DInt):
             elo = self.bin_lo
             ehi = self.bin_hi
             if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
+                elo = old_div(self._hc, self.bin_hi)
+                ehi = old_div(self._hc, self.bin_lo)
         elif rmf is not None:
             if (rmf.e_min is None) or (rmf.e_max is None):
                 raise DataErr('noenergybins', 'RMF')
@@ -569,8 +574,8 @@ class DataPHA(Data1DInt):
                 if self.units == 'wavelength':
                     return (elo, ehi)
 
-                elo = self._hc / self.bin_hi
-                ehi = self._hc / self.bin_lo
+                elo = old_div(self._hc, self.bin_hi)
+                ehi = old_div(self._hc, self.bin_lo)
 
         else:
             energylist = []
@@ -603,8 +608,8 @@ class DataPHA(Data1DInt):
 
         lo, hi = elo, ehi
         if self.units == 'wavelength':
-            lo = self._hc/ehi
-            hi = self._hc/elo
+            lo = old_div(self._hc,ehi)
+            hi = old_div(self._hc,elo)
 
         return (lo,hi)
 
@@ -613,7 +618,7 @@ class DataPHA(Data1DInt):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
         val = numpy.asarray(val).astype(numpy.int_) - 1
         try:
-            return (elo[val] + ehi[val]) / 2.0
+            return old_div((elo[val] + ehi[val]), 2.0)
         except IndexError:
             raise DataErr('invalidchannel', val)
 
@@ -655,7 +660,7 @@ class DataPHA(Data1DInt):
             if vals == 0.0:  vals = tiny
         else:
             vals[ vals == 0.0 ] = tiny
-        vals = self._hc / vals
+        vals = old_div(self._hc, vals)
         return vals
 
     def _wavelength_to_channel(self, val):
@@ -665,7 +670,7 @@ class DataPHA(Data1DInt):
             if vals == 0.0:  vals = tiny
         else:
             vals[ vals == 0.0 ] = tiny
-        vals = self._hc / vals
+        vals = old_div(self._hc, vals)
         return self._energy_to_channel(vals)
 
     default_background_id = 1
@@ -829,7 +834,7 @@ class DataPHA(Data1DInt):
 
     def _dynamic_group(self, group_func, *args, **kwargs):
 
-        keys = kwargs.keys()[:]
+        keys = list(kwargs.keys())[:]
         for key in keys:
             if kwargs[key] is None:
                 kwargs.pop(key)
@@ -1192,15 +1197,15 @@ class DataPHA(Data1DInt):
             backscal = bkg.backscal
             if backscal is not None:
                 backscal = self._check_scale(backscal, group=False)
-                bdata = bdata / backscal
+                bdata = old_div(bdata, backscal)
 
             areascal = bkg.areascal
             if areascal is not None:
                 areascal = self._check_scale(areascal, group=False)
-                bdata = bdata / areascal
+                bdata = old_div(bdata, areascal)
 
             if bkg.exposure is not None:
-                bdata = bdata / bkg.exposure
+                bdata = old_div(bdata, bkg.exposure)
 
             bdata_list.append(bdata)
 
@@ -1224,7 +1229,7 @@ class DataPHA(Data1DInt):
         if self.exposure is not None:
             bkgsum = self.exposure * bkgsum
 
-        return bkgsum / SherpaFloat(nbkg)
+        return old_div(bkgsum, SherpaFloat(nbkg))
 
     def get_dep(self, filter=False):
         # FIXME: Aneta says we need to group *before* subtracting, but that
@@ -1311,15 +1316,15 @@ class DataPHA(Data1DInt):
                 bksl = bkg.backscal
                 if bksl is not None:
                     bksl = self._check_scale(bksl, filter=filter)
-                    berr = berr / bksl
+                    berr = old_div(berr, bksl)
 
                 area = bkg.areascal
                 if area is not None:
                     area = self._check_scale(area, filter=filter)
-                    berr = berr / area
+                    berr = old_div(berr, area)
 
                 if bkg.exposure is not None:
-                    berr = berr / bkg.exposure
+                    berr = old_div(berr, bkg.exposure)
 
                 berr = berr * berr
                 bkg_staterr_list.append(berr)
@@ -1347,7 +1352,7 @@ class DataPHA(Data1DInt):
             nbkg = SherpaFloat(nbkg)
 
             if staterr is not None:
-                staterr = staterr*staterr + bkgsum / (nbkg * nbkg)
+                staterr = staterr*staterr + old_div(bkgsum, (nbkg * nbkg))
                 staterr = numpy.sqrt(staterr)
 
         return staterr
@@ -1436,7 +1441,7 @@ class DataPHA(Data1DInt):
             if self.units == 'energy':
                 ebin = ehi - elo
             elif self.units == 'wavelength':
-                ebin = self._hc/elo - self._hc/ehi
+                ebin = old_div(self._hc,elo) - old_div(self._hc,ehi)
             elif self.units == 'channel':
                 ebin = ehi - elo
             else:
@@ -1523,7 +1528,7 @@ class DataPHA(Data1DInt):
     @staticmethod
     def _middle(array):
         array = numpy.asarray(array)
-        return (array.min() + array.max()) / 2.0
+        return old_div((array.min() + array.max()), 2.0)
 
     @staticmethod
     def _min(array):
@@ -1719,13 +1724,13 @@ class DataPHA(Data1DInt):
         elo = self.apply_filter(elo, self._min)
         ehi = self.apply_filter(ehi, self._max)
         if self.units=="wavelength":
-            lo = self._hc / ehi
-            hi = self._hc / elo
+            lo = old_div(self._hc, ehi)
+            hi = old_div(self._hc, elo)
             elo = lo; ehi = hi
         cnt = self.get_dep(True)
         arf = self.get_specresp(filter=True)
 
-        y = cnt/(ehi-elo)
+        y = old_div(cnt,(ehi-elo))
         if self.exposure is not None:
             y /= self.exposure           # photons/keV/sec or
                                          # photons/Ang/sec
@@ -1806,7 +1811,7 @@ class DataIMG(Data2D):
         old = self._fields
         ss = old
         try:
-            self._fields = filter((lambda x: x!='header'), self._fields)
+            self._fields = list(filter((lambda x: x!='header'), self._fields))
             ss = BaseData.__str__(self)
         finally:
             self._fields = old
@@ -1834,7 +1839,7 @@ class DataIMG(Data2D):
         #self.__dict__['_get_physical']=(lambda : None)
         #self.__dict__['_get_world']=(lambda : None)
 
-        if not state.has_key('header'):
+        if 'header' not in state:
             self.header=None
 
         self.__dict__.update(state)
@@ -2237,11 +2242,11 @@ class DataIMGInt(DataIMG):
 
     def get_x0(self, filter=False):
         indep = self.get_indep(filter)
-        return (indep[0] + indep[2]) / 2.0
+        return old_div((indep[0] + indep[2]), 2.0)
 
     def get_x1(self, filter=False):
         indep = self.get_indep(filter)
-        return (indep[1] + indep[3]) / 2.0
+        return old_div((indep[1] + indep[3]), 2.0)
 
 
     def get_axes(self):

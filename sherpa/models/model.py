@@ -1,3 +1,4 @@
+from builtins import str
 # 
 #  Copyright (C) 2010  Smithsonian Astrophysical Observatory
 #
@@ -117,7 +118,7 @@ class Model(NoNewAttributesAfterInit):
     # Make parameter access case insensitive
     def __getattr__(self, name):
         par = None
-        for key in self.__dict__.keys():
+        for key in list(self.__dict__.keys()):
             if (type(key) == str):
                 if (name.lower() == key.lower()):
                     par = self.__dict__.get(key)
@@ -172,7 +173,7 @@ class Model(NoNewAttributesAfterInit):
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
-        for p, v in izip(tpars, vals):
+        for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.val = p.min
@@ -196,7 +197,7 @@ class Model(NoNewAttributesAfterInit):
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
-        for p, v in izip(tpars, vals):
+        for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.min = p.hard_min
@@ -222,7 +223,7 @@ class Model(NoNewAttributesAfterInit):
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
-        for p, v in izip(tpars, vals):
+        for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.max = p.hard_min
@@ -581,7 +582,7 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
 
     def calc(self, p, arglist):
         vals = []
-        for model, args in izip(self.models, arglist):
+        for model, args in zip(self.models, arglist):
             # FIXME: we're not using p here (and therefore assuming that the
             # parameter values have already been updated to match the contents
             # of p)

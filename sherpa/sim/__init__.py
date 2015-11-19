@@ -193,6 +193,9 @@ parameter::
     pval, plo, phi = sherpa.utils.get_error_estimates(par1[nburn:])
 
 """
+from __future__ import division
+from builtins import str
+from past.utils import old_div
 
 from past.builtins import basestring
 
@@ -217,11 +220,11 @@ def flat(x):
     return 1.0
 
 def inverse(x):
-    prior = 1.0/x
+    prior = old_div(1.0,x)
     return prior
 
 def inverse2(x):
-    prior = 1.0/(x*x)
+    prior = old_div(1.0,(x*x))
     return prior
 
 _samplers = dict(metropolismh=MetropolisMH, mh=MH)
@@ -425,7 +428,7 @@ class MCMC(NoNewAttributesAfterInit):
         ['metropolismh', 'fullbayes', 'mh', 'pragbayes']
 
         """
-        return self.__samplers.keys()
+        return list(self.__samplers.keys())
 
 
     def set_sampler(self, sampler):

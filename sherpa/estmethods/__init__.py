@@ -1,3 +1,8 @@
+from __future__ import division
+from builtins import map
+from builtins import range
+from past.utils import old_div
+from builtins import object
 #
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
@@ -131,7 +136,7 @@ class EstMethod(NoNewAttributesAfterInit):
 
     def __str__(self):
         # Put name first always
-        keylist = self.config.keys()
+        keylist = list(self.config.keys())
         keylist = ['name'] + keylist
         full_config = {'name': self.name}
         full_config.update(self.config)
@@ -777,7 +782,7 @@ class ConfRootBracket(ConfRootNone):
             if mysgn(fa) != mysgn(fb):
                 if False == self.open_interval:
                     warn_user_about_open_interval([xa, xb])
-                    return (xa + xb) / 2.0
+                    return old_div((xa + xb), 2.0)
                 else:
                     if xa < xb:
                         return (xa, xb)
@@ -833,7 +838,7 @@ class ConfStep(object):
 
             numer = 2.0 * fval * fdif
             denom = 2.0 * fdif * fdif - fval * fdif2
-            x -= numer / denom
+            x -= old_div(numer, denom)
             nfev += 1
 
         return [x, fval]
@@ -879,12 +884,12 @@ class ConfStep(object):
         if abs(fb) > abs(fa) or 0.0 == fa:
             return self.covar(dir, iter, step_size, base)
 
-        s = fb / fa
+        s = old_div(fb, fa)
         p = (xa - xb) * s
         if 1.0 == s:
             return self.covar(dir, iter, step_size, base)
         q = 1.0 - s
-        x = xb - p / q
+        x = xb - old_div(p, q)
 
         if self.is_same_dir(dir, xa, x):
             return x
@@ -903,7 +908,7 @@ def trace_fcn(fcn, bloginfo):
         '''compact but more details then debugger'''
         name = fcn.__name__
         str = '%s%s(%s)' % (bloginfo.prefix, fcn.__name__, ", ".join(
-            map(repr, chain(args, kwargs.values()))))
+            map(repr, chain(args, list(kwargs.values())))))
         bloginfo.blogger.info(str)
         return fcn(*args, **kwargs)
 
@@ -913,7 +918,7 @@ def trace_fcn(fcn, bloginfo):
             str += args[0].__str__()
         for arg in args[1:]:
             str = '%s, %s' % (str, arg)
-        for key in kwargs.iterkeys():
+        for key in kwargs.keys():
             value = kwargs[key]
             str = '%s, %s=%s' % (str, key, value)
         val = fcn(*args, **kwargs)
@@ -1178,7 +1183,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
 
     def worker(out_q, err_q, parids, parnums, parvals, lock):
         results = []
-        for parid, singleparnum in izip(parids, parnums):
+        for parid, singleparnum in zip(parids, parnums):
             try:
                 result = estfunc(parid, singleparnum, lock)
                 results.append((parid, result))
@@ -1219,7 +1224,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
 
     tasks = [multiprocessing.Process(target=worker,
                                      args=(out_q, err_q, parid, parnum, pars, lock))
-             for parid, parnum in izip(parids, limit_parnums)]
+             for parid, parnum in zip(parids, limit_parnums)]
 
     return run_tasks(tasks, out_q, err_q, size)
 

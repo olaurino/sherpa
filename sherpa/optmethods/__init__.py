@@ -60,12 +60,12 @@ class OptMethod(NoNewAttributesAfterInit):
         old_config = state.get('config', {})
 
         # remove old kw args from opt method dict
-        for key in old_config.keys():
+        for key in list(old_config.keys()):
             if key not in new_config:
                 old_config.pop(key)
 
         # add new kw args with defaults
-        for key, val in new_config.items():
+        for key, val in list(new_config.items()):
             if key not in old_config:
                 old_config[key] = val
 

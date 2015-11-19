@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 # 
 #  Copyright (C) 2010  Smithsonian Astrophysical Observatory
 #
@@ -73,13 +76,13 @@ class Const1D(ArithmeticModel):
         max = dep.max()
         ylo = 0
         if numpy.abs(min - 0) > DBL_EPSILON:
-            ylo = min/100.
+            ylo = old_div(min,100.)
             if min < 0: ylo = 0
         yhi = 0
         if numpy.abs(max - 0) > DBL_EPSILON:
             yhi = -10*max
             if max > 0: yhi = 100*max
-        param_apply_limits({ 'val':(max+min)/2., 'min':ylo, 'max':yhi },
+        param_apply_limits({ 'val':old_div((max+min),2.), 'min':ylo, 'max':yhi },
                            self.c0, **kwargs)
 
     @modelCacher1d
@@ -274,7 +277,7 @@ class LogParabola(ArithmeticModel):
         return _modelfcts.logparabola(*args, **kwargs)
 
 
-_gfactor = numpy.sqrt(numpy.pi/(4*numpy.log(2)))
+_gfactor = numpy.sqrt(old_div(numpy.pi,(4*numpy.log(2))))
 
 class NormGauss1D(ArithmeticModel):
 
@@ -298,8 +301,8 @@ class NormGauss1D(ArithmeticModel):
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
         # Apply normalization factor to guessed amplitude
-        norm = numpy.sqrt(numpy.pi/_gfactor)*self.fwhm.val
-        for key in ampl.keys():
+        norm = numpy.sqrt(old_div(numpy.pi,_gfactor))*self.fwhm.val
+        for key in list(ampl.keys()):
             if ampl[key] is not None:
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
@@ -334,7 +337,7 @@ class Polynom1D(ArithmeticModel):
     def __init__(self, name='polynom1d'):
         pars = []
 
-        for i in xrange(9):
+        for i in range(9):
             pars.append(Parameter(name, 'c%d' % i, 0, frozen=True))
         pars[0].val = 1
         pars[0].frozen = False
@@ -352,8 +355,8 @@ class Polynom1D(ArithmeticModel):
         xmax = args[0].max()
         ymin = dep.min()
         ymax = dep.max()
-        dydx = (ymax-ymin)/(xmax-xmin)
-        dydx2 = (ymax-ymin)/((xmax-xmin)*(xmax-xmin))
+        dydx = old_div((ymax-ymin),(xmax-xmin))
+        dydx2 = old_div((ymax-ymin),((xmax-xmin)*(xmax-xmin)))
 
         xlo = 0
         if numpy.abs(xmin - 0) >= DBL_EPSILON:
@@ -379,7 +382,7 @@ class Polynom1D(ArithmeticModel):
             if ymax > 0:
                 yhi = ymax
 
-        c0 = {'val': (ymax+ymin)/2.0, 'min': ylo, 'max': yhi}
+        c0 = {'val': old_div((ymax+ymin),2.0), 'min': ylo, 'max': yhi}
         c1 = {'val': 0.0, 'min': -100*dydx, 'max': 100*dydx}
         c2 = {'val': 0.0, 'min': -100*dydx2, 'max': 100*dydx2}
         c3 = {'val': 0.0, 'min': ylo, 'max': yhi}
@@ -696,8 +699,8 @@ class NormGauss2D(ArithmeticModel):
         param_apply_limits(ypos, self.ypos, **kwargs)
 
         # Apply normalization factor to guessed amplitude
-        norm = (numpy.pi/_gfactor)*self.fwhm.val*self.fwhm.val*numpy.sqrt(1.0 - (self.ellip.val*self.ellip.val))
-        for key in ampl.keys():
+        norm = (old_div(numpy.pi,_gfactor))*self.fwhm.val*self.fwhm.val*numpy.sqrt(1.0 - (self.ellip.val*self.ellip.val))
+        for key in list(ampl.keys()):
             if ampl[key] is not None:
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
@@ -745,13 +748,13 @@ class Polynom2D(ArithmeticModel):
             yhi = -ymax
             if ymax > 0: yhi = ymax
 
-        dydx0 = (ymax-ymin)/(x0max-x0min)
-        dydx1 = (ymax-ymin)/(x1max-x1min)
-        dyd2x0 = (ymax-ymin)/((x0max-x0min)*(x0max-x0min))
-        dyd2x1 = (ymax-ymin)/((x1max-x1min)*(x1max-x1min))
-        dydx0dx1 = (ymax-ymin)/((x0max-x0min)*(x1max-x1min))
+        dydx0 = old_div((ymax-ymin),(x0max-x0min))
+        dydx1 = old_div((ymax-ymin),(x1max-x1min))
+        dyd2x0 = old_div((ymax-ymin),((x0max-x0min)*(x0max-x0min)))
+        dyd2x1 = old_div((ymax-ymin),((x1max-x1min)*(x1max-x1min)))
+        dydx0dx1 = old_div((ymax-ymin),((x0max-x0min)*(x1max-x1min)))
 
-        c     = {'val':(ymax+ymin)/2., 'min': ylo, 'max': yhi }
+        c     = {'val':old_div((ymax+ymin),2.), 'min': ylo, 'max': yhi }
         cx1   = {'val': 0., 'min': -100*dydx0, 'max': 100*dydx0 }
         cy1   = {'val': 0., 'min': -100*dydx1, 'max': 100*dydx1 }
         cx2   = {'val': 0., 'min': -100*dyd2x0, 'max': 100*dyd2x0 }

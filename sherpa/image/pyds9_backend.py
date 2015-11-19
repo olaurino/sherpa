@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import str
+from past.utils import old_div
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -17,7 +20,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from itertools import izip
+
 import numpy
 import time
 import ds9
@@ -141,8 +144,8 @@ def _set_wcs(keys):
 
         if eqpos is not None:
             wcdelt = wcdelt * pcdelt
-            wcrpix = ((wcrpix - pcrval) /
-                      pcdelt + pcrpix )
+            wcrpix = (old_div((wcrpix - pcrval),
+                      pcdelt) + pcrpix )
 
     if eqpos is not None:
         # join together all strings with a '\n' between each

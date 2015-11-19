@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import str
+from past.builtins import basestring
+from past.utils import old_div
 #
 #  Copyright (C) 2010, 2015  Smithsonian Astrophysical Observatory
 #
@@ -81,7 +85,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi = self.rmf.get_indep()
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = old_div(DataPHA._hc, self.ehi), old_div(DataPHA._hc, self.elo)
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -132,7 +136,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi = self.arf.get_indep()
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = old_div(DataPHA._hc, self.ehi), old_div(DataPHA._hc, self.elo)
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -186,7 +190,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
         self.elo, self.ehi = self.arf.get_indep()
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = old_div(DataPHA._hc, self.ehi), old_div(DataPHA._hc, self.elo)
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -231,8 +235,8 @@ class RMFModelPHA(RMFModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = DataPHA._hc / pha.bin_hi
-                bin_hi = DataPHA._hc / pha.bin_lo
+                bin_lo = old_div(DataPHA._hc, pha.bin_hi)
+                bin_hi = old_div(DataPHA._hc, pha.bin_lo)
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -245,7 +249,7 @@ class RMFModelPHA(RMFModel):
             self.elo, self.ehi = bin_lo, bin_hi
 
             # Wavelength grid (angstroms)
-            self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+            self.lo, self.hi = old_div(DataPHA._hc, self.ehi), old_div(DataPHA._hc, self.elo)
 
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
@@ -326,8 +330,8 @@ class ARFModelPHA(ARFModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = DataPHA._hc / pha.bin_hi
-                bin_hi = DataPHA._hc / pha.bin_lo
+                bin_lo = old_div(DataPHA._hc, pha.bin_hi)
+                bin_hi = old_div(DataPHA._hc, pha.bin_lo)
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -425,8 +429,8 @@ class RSPModelPHA(RSPModel):
             # If PHA grid is in angstroms then convert to keV for
             # consistency
             if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = DataPHA._hc / pha.bin_hi
-                bin_hi = DataPHA._hc / pha.bin_lo
+                bin_lo = old_div(DataPHA._hc, pha.bin_hi)
+                bin_hi = old_div(DataPHA._hc, pha.bin_lo)
 
             # FIXME: What about filtered option?? bin_lo, bin_hi are
             # unfiltered??
@@ -764,7 +768,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
             grid.append(indep)
 
         self.elo, self.ehi, self.table = compile_energy_grid(grid)
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = old_div(DataPHA._hc, self.ehi), old_div(DataPHA._hc, self.elo)
 
     def startup(self):
         pha = self.pha
@@ -826,11 +830,11 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
                 # again, fit() never comes in here b/c it calls startup()
                 src = self.source
                 vals = []
-                for model, args in izip(self.models, self.grid):
+                for model, args in zip(self.models, self.grid):
                     elo, ehi = lo, hi = args
                     if pha.units == 'wavelength':
-                        lo = DataPHA._hc / ehi
-                        hi = DataPHA._hc / elo
+                        lo = old_div(DataPHA._hc, ehi)
+                        hi = old_div(DataPHA._hc, elo)
                     vals.append(model(src(lo, hi)))
                 self.orders = vals
             # Fast
@@ -844,7 +848,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
                 # Fold summed intervals through the associated response.
                 self.orders = \
                     [model(sum_intervals(src, interval[0], interval[1]))
-                     for model, interval in izip(self.models, self.table)]
+                     for model, interval in zip(self.models, self.table)]
 
             vals = sum(self.orders)
             if self.mask is not None:
@@ -887,7 +891,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.rmf = rmf
 
         self.elo, self.ehi = rmf.get_indep()
-        self.lo, self.hi = DataPHA._hc / self.ehi, DataPHA._hc / self.elo
+        self.lo, self.hi = old_div(DataPHA._hc, self.ehi), old_div(DataPHA._hc, self.elo)
         self.model = model
         self.otherargs = None
         self.otherkwargs = None

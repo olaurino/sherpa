@@ -17,6 +17,9 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 
 import numpy
 import numpy.random
@@ -56,7 +59,7 @@ def sample_flux(fit, data, src, method=calc_energy_flux, correlated=False,
     def within_limits(mysamples, mymins, mymaxs):
         num_par = mysamples.shape[1]
         for row in mysamples:
-            for index in xrange(num_par):
+            for index in range(num_par):
                 if row[index] < mymins[index]:
                     row[index] = mymins[index]
                 if row[index] > mymaxs[index]:
@@ -87,7 +90,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
 
     def simulated_pars_within_ranges(mysamples, mysoftmins, mysoftmaxs):
         num = len(mysoftmins)
-        for ii in xrange(num):
+        for ii in range(num):
             ii1 = ii + 1
             tmp = (mysamples[:, ii1] > mysoftmins[ii])
             selpmasym = mysamples[tmp]
@@ -123,12 +126,12 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         orig_log_level = logger.level
 
         mystat = []
-        for nn in xrange(size):
+        for nn in range(size):
             logger.setLevel(logging.ERROR)
             session.set_source(id, orig_source)
             logger.setLevel(orig_log_level)
             oflx[nn] = mysim[nn, 0]
-            for ii in xrange(len(thawedpars)):
+            for ii in range(len(thawedpars)):
                 val = mysim[nn, ii + 1]
                 session.set_par(thawedpars[ii].fullname, val)
             session.set_source(id, modelcomponent)
@@ -139,7 +142,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
             #####################################
         oflxiflx = [oflx, iflx]
 
-        myconfidence = (1.0 - confidence / 100.0) / 2.0
+        myconfidence = old_div((1.0 - old_div(confidence, 100.0)), 2.0)
         result = []
 
         for x in oflxiflx:
@@ -155,7 +158,7 @@ def calc_sample_flux(id, lo, hi, session, fit, data, samples, modelcomponent,
         sampletmp = numpy.zeros((samples.shape[0], 1), dtype=samples.dtype)
         samples = numpy.concatenate((samples, sampletmp), axis=1)
 
-        for index in xrange(size):
+        for index in range(size):
             samples[index][-1] = mystat[index]
 
         #samples = numpy.delete( samples, (size), axis=0 )

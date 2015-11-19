@@ -20,6 +20,8 @@
 """
 Tools for creating, storing, inspecting, and manipulating data sets
 """
+from __future__ import division
+from past.utils import old_div
 
 
 import sys
@@ -110,7 +112,7 @@ class BaseData(NoNewAttributesAfterInit):
         """
 
         fields = self._fields + getattr(self, '_extra_fields', ())
-        fdict = dict(izip(fields, [getattr(self, f) for f in fields]))
+        fdict = dict(zip(fields, [getattr(self, f) for f in fields]))
         return print_fields(fields, fdict)
 
     def apply_filter(self, data):
@@ -469,7 +471,7 @@ class DataSimulFit(Data):
     def eval_model_to_fit(self, modelfuncs):
         total_model = []
 
-        for func, data in izip(modelfuncs, self.datasets):
+        for func, data in zip(modelfuncs, self.datasets):
             total_model.append(data.eval_model_to_fit(func))
 
         return numpy.concatenate(total_model)
@@ -641,7 +643,7 @@ class Data1DInt(Data1D):
 
     def get_x(self, filter=False):
         indep = self.get_indep(filter)
-        return (indep[0] + indep[1]) / 2.0
+        return old_div((indep[0] + indep[1]), 2.0)
 
     def get_xerr(self, filter=False):
         xlo,xhi = self.get_indep(filter)
@@ -776,11 +778,11 @@ class Data2DInt(Data2D):
 
     def get_x0(self, filter=False):
         indep = self.get_indep(filter)
-        return (indep[0] + indep[2]) / 2.0
+        return old_div((indep[0] + indep[2]), 2.0)
 
     def get_x1(self, filter=False):
         indep = self.get_indep(filter)
-        return (indep[1] + indep[3]) / 2.0
+        return old_div((indep[1] + indep[3]), 2.0)
 
     def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
         BaseData.notice(self, (None, None, x0lo, x1lo),

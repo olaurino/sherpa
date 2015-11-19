@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import str
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #

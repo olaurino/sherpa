@@ -1,3 +1,7 @@
+from __future__ import division
+from builtins import map
+from builtins import object
+from past.utils import old_div
 #
 #  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
 #
@@ -86,7 +90,7 @@ def multivariate_t(mean, cov, df, size=None):
         numpy.zeros_like(mean), cov, size)
     # x = numpy.sqrt(numpy.random.chisquare(df)/df)
     # numpy.divide(normal, x, normal)
-    x = numpy.sqrt(numpy.random.chisquare(df, size) / df)
+    x = numpy.sqrt(old_div(numpy.random.chisquare(df, size), df))
     numpy.divide(normal, x[numpy.newaxis].T, normal)
     numpy.add(mean, normal, normal)
     x = normal
@@ -128,7 +132,7 @@ class ParameterScaleVector(ParameterScale):
             finally:
                 fit.estmethod = oldestmethod
 
-            for par, val, lo, hi in izip(thawedpars, r.parvals, r.parmins, r.parmaxes):
+            for par, val, lo, hi in zip(thawedpars, r.parvals, r.parmins, r.parmaxes):
                 scale = None
                 if lo is not None and hi is not None:
                     scale = numpy.abs(lo)
@@ -167,7 +171,7 @@ class ParameterScaleVector(ParameterScale):
             if not numpy.iterable(myscales):
                 raise TypeError(
                     "scales option must be iterable of length %d " % len(thawedpars))
-            scales = map(abs, myscales)
+            scales = list(map(abs, myscales))
         scales = numpy.asarray(scales).transpose()
         return scales
 
@@ -248,7 +252,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
         scales = self.scale.get_scales(fit)
         samples = [numpy.random.uniform(val - factor * abs(scale),
                                         val + factor * abs(scale),
-                                        int(num)) for val, scale in izip(vals, scales)]
+                                        int(num)) for val, scale in zip(vals, scales)]
         return numpy.asarray(samples).T
 
 
@@ -258,7 +262,7 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
         vals = numpy.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit, myscales)
         samples = [numpy.random.normal(
-            val, scale, int(num)) for val, scale in izip(vals, scales)]
+            val, scale, int(num)) for val, scale in zip(vals, scales)]
         return numpy.asarray(samples).T
 
 
@@ -278,7 +282,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         return multivariate_t(vals, cov, dof, int(num))
 
 
-class evaluate:
+class evaluate(object):
     def __init__(self, fit):
         self.fit = fit
     def __call__(self, sample):

@@ -53,6 +53,11 @@ al. (2001) and in more detail in Chapter 11 of Gelman, Carlin, Stern, and Rubin
 
 http://hea-www.harvard.edu/AstroStat/pyBLoCXS/
 """
+from __future__ import division
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 
 # The pyBLoCXS code base is cleanly separable from Sherpa!
 
@@ -107,7 +112,7 @@ def rmvt(mu, sigma, dof):
     zero_vec = np.zeros_like(mu)
     q = np.random.chisquare(dof, 1)[0]
     nsample  = np.random.multivariate_normal(zero_vec, sigma)
-    proposal = mu + nsample / np.sqrt(q / dof)
+    proposal = mu + old_div(nsample, np.sqrt(old_div(q, dof)))
     return proposal
 
 
@@ -131,8 +136,8 @@ def dmvt(x, mu, sigma, dof, log=True, norm=False):
 
     # log density normalized
     if norm:
-        val += (lgam((dof+p)/2.) - lgam(dof/2.) - (p/2.) *
-                np.log(np.pi) + (dof/2.) * np.log(dof))
+        val += (lgam(old_div((dof+p),2.)) - lgam(old_div(dof,2.)) - (old_div(p,2.)) *
+                np.log(np.pi) + (old_div(dof,2.)) * np.log(dof))
 
     # density
     if not log:
@@ -230,7 +235,7 @@ class Walk(object):
         #tstart = time.time()
 
         try:
-            for ii in xrange(niter):
+            for ii in range(niter):
 
                 #progress_bar(ii, niter, tstart, self._sampler.__class__.__name__)
 
@@ -286,7 +291,7 @@ class Sampler(object):
         # get the initial keyword argument defaults
         argspec = inspect.getargspec(self.init)
         first = len(argspec[0]) - len(argspec[3])
-        self._opts = dict(izip(argspec[0][first:], argspec[3][0:]))
+        self._opts = dict(zip(argspec[0][first:], argspec[3][0:]))
         self.walk = None
 
     def init(self):
@@ -402,8 +407,8 @@ class MH(Sampler):
         # selected parameters
         if np.sum(self.log) > 0:
             logcovar = self._sigma.copy()
-            logcovar[:,self.log]= logcovar[:,self.log]/self._mu[self.log]
-            logcovar[self.log]= (logcovar[self.log].T/self._mu[self.log]).T
+            logcovar[:,self.log]= old_div(logcovar[:,self.log],self._mu[self.log])
+            logcovar[self.log]= (old_div(logcovar[self.log].T,self._mu[self.log])).T
             self._sigma = np.copy(logcovar)
             self._mu[self.log]=np.log(self._mu[self.log])
             current[self.log]=np.log( current[self.log])
@@ -412,13 +417,13 @@ class MH(Sampler):
         # for selected parameters
         if np.sum(self.inv) > 0:
             invcovar = self._sigma.copy()
-            invcovar[:,self.inv] = invcovar[:,self.inv]/(
-                                   -1.0*np.power(self._mu[self.inv],2))
-            invcovar[self.inv] = (invcovar[self.inv].T/(
-                                  -1.0*np.power(self._mu[self.inv],2))).T
+            invcovar[:,self.inv] = old_div(invcovar[:,self.inv],(
+                                   -1.0*np.power(self._mu[self.inv],2)))
+            invcovar[self.inv] = (old_div(invcovar[self.inv].T,(
+                                  -1.0*np.power(self._mu[self.inv],2)))).T
             self._sigma = np.copy(invcovar)
-            self._mu[self.inv]=1.0/(self._mu[self.inv])
-            current[self.inv]=1.0/( current[self.inv])
+            self._mu[self.inv]=old_div(1.0,(self._mu[self.inv]))
+            current[self.inv]=old_div(1.0,( current[self.inv]))
 
         self.rejections=0
 
@@ -434,11 +439,11 @@ class MH(Sampler):
         if not self.defaultprior:
             x = mu.copy()
             if np.sum(self.originalscale) < mu.size:
-                for j in xrange(mu.size):
+                for j in range(mu.size):
                     if self.log[j]*(1-self.originalscale[j])>0:
                         x[j] = np.log(x[j])
                     if self.inv[j]*(1-self.originalscale[j])>0:
-                        x[j] = 1.0 / x[j]
+                        x[j] = old_div(1.0, x[j])
 
             for ii, func in enumerate(self.prior_funcs):
                 if self.priorshape[ii]:
@@ -510,7 +515,7 @@ class MH(Sampler):
         if np.sum(self.log)>0:
             proposed_params[self.log]=np.exp(proposed_params[self.log])
         if np.sum(self.inv)>0:
-            proposed_params[self.inv]=1.0/proposed_params[self.inv]
+            proposed_params[self.inv]=old_div(1.0,proposed_params[self.inv])
 
         proposed_stat = self.calc_fit_stat(proposed_params)
 
@@ -519,7 +524,7 @@ class MH(Sampler):
             proposed_params[self.log] = np.log(proposed_params[self.log])
         #putting parameters back on inverse scale
         if np.sum(self.inv)>0:
-            proposed_params[self.inv] = 1.0/proposed_params[self.inv]
+            proposed_params[self.inv] = old_div(1.0,proposed_params[self.inv])
 
         # include prior
         proposed_stat = self.update(proposed_stat, proposed_params, False)

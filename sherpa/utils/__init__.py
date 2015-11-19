@@ -18,6 +18,12 @@
 #
 
 from __future__ import print_function
+from __future__ import division
+from builtins import map
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 from past.builtins import xrange
 
 """
@@ -141,7 +147,7 @@ class TraceCalls(object):
             indent = ' ' * TraceCalls.cur_indent
             argstr = ', '.join(
                 [repr(a) for a in args] +
-                ["%s=%s" % (a, repr(b)) for a, b in kwargs.items()])
+                ["%s=%s" % (a, repr(b)) for a, b in list(kwargs.items())])
             self.stream.write('%s%s(%s)\n' % (indent, fn.__name__, argstr))
 
             TraceCalls.cur_indent += self.indent_step
@@ -345,13 +351,13 @@ eps = numpy.finfo(numpy.float32).eps
 
 
 def erfinv(y):
-    return ndtri((y + 1.0) / 2.0) / numpy.sqrt(2.0)
+    return old_div(ndtri(old_div((y + 1.0), 2.0)), numpy.sqrt(2.0))
 
 
 def filter_bins(mins, maxes, axislist):
     mask = None
 
-    for lo,hi,axis in izip(mins,maxes,axislist):
+    for lo,hi,axis in zip(mins,maxes,axislist):
 
         if (lo is None) and (hi is None):
             continue
@@ -441,7 +447,7 @@ def export_method(meth, name=None, modname=None):
         # This is needed for making loggable decorator work (Omar)
         argspec = inspect.getargspec(meth._original)
         defaults = meth._original.__defaults__
-        doc = meth._original.func_doc
+        doc = meth._original.__doc__
     else:
         argspec = inspect.getargspec(meth)
         defaults = meth.__defaults__
@@ -495,7 +501,7 @@ def get_keyword_defaults(func, skip=0):
     if argspec[3] is None:
         return {}
     first = len(argspec[0]) - len(argspec[3])
-    return dict(izip(argspec[0][first + skip:], argspec[3][skip:]))
+    return dict(zip(argspec[0][first + skip:], argspec[3][skip:]))
 
 
 def get_num_args(func):
@@ -714,8 +720,8 @@ def get_error_estimates(x, sorted=False):
 
     sigfrac = 0.682689
     median = quantile(xs, 0.5)
-    lval   = quantile(xs, (1 - sigfrac) / 2.0)
-    hval   = quantile(xs, (1 + sigfrac) / 2.0)
+    lval   = quantile(xs, old_div((1 - sigfrac), 2.0))
+    hval   = quantile(xs, old_div((1 + sigfrac), 2.0))
 
     return (median, lval, hval)
 
@@ -801,8 +807,8 @@ def multinormal_pdf(x, mu, sigma):
     if numpy.max(numpy.abs(sigma - sigma.T)) >= 1.e-9:
         raise ValueError("sigma is not symmetric")
     rank     = mu.size
-    coeff    = 1.0 / (numpy.power(2.0 * numpy.pi, rank / 2.0) *
-                      numpy.sqrt(numpy.abs(numpy.linalg.det(sigma))))
+    coeff    = old_div(1.0, (numpy.power(2.0 * numpy.pi, old_div(rank, 2.0)) *
+                      numpy.sqrt(numpy.abs(numpy.linalg.det(sigma)))))
     xmu      = numpy.mat(x - mu)
     invsigma = numpy.mat(numpy.linalg.inv(sigma))
 
@@ -857,10 +863,10 @@ def multit_pdf(x, mu, sigma, dof):
 
     rank     = mu.size
     np       = float(n + rank)
-    coeff    = (gamma(np / 2.0) /
-                (gamma(n / 2.0) * numpy.power(n, rank / 2.0) *
-                 numpy.power(numpy.pi, rank / 2.0) *
-                 numpy.sqrt(numpy.abs(numpy.linalg.det(sigma)))))
+    coeff    = (old_div(gamma(old_div(np, 2.0)),
+                (gamma(old_div(n, 2.0)) * numpy.power(n, old_div(rank, 2.0)) *
+                 numpy.power(numpy.pi, old_div(rank, 2.0)) *
+                 numpy.sqrt(numpy.abs(numpy.linalg.det(sigma))))))
     xmu      = numpy.mat(x - mu)
     invsigma = numpy.mat(numpy.linalg.inv(sigma))
 
@@ -871,7 +877,7 @@ def multit_pdf(x, mu, sigma, dof):
     #   x = [[d,e,f]]
     #
     term = 1.0 + 1.0 / n * ((xmu * invsigma) * xmu.T)
-    return float(coeff * numpy.power(term, -np / 2.0))
+    return float(coeff * numpy.power(term, old_div(-np, 2.0)))
 
 
 def _convolve(a, b):
@@ -1152,7 +1158,7 @@ def is_binary_file(filename):
 
 def get_midpoint(a):
     # return numpy.abs(a.max() - a.min())/2. + a.min()
-    return numpy.abs(a.max() + a.min()) / 2.0
+    return old_div(numpy.abs(a.max() + a.min()), 2.0)
 
 
 def get_peak(y, x, xhi=None):
@@ -1164,7 +1170,7 @@ def get_valley(y, x, xhi=None):
 
 
 def get_fwhm(y, x, xhi=None):
-    half_max_val = y.max() / 2.0
+    half_max_val = old_div(y.max(), 2.0)
     x_max = x[y.argmax()]
     for ii, val in enumerate(y[:y.argmax()]):
         if val >= half_max_val:
@@ -1174,7 +1180,7 @@ def get_fwhm(y, x, xhi=None):
 
 def guess_fwhm(y, x, xhi=None, scale=1000):
     fwhm = get_fwhm(y, x, xhi)
-    return {'val': fwhm, 'min': fwhm / scale, 'max': fwhm * scale}
+    return {'val': fwhm, 'min': old_div(fwhm, scale), 'max': fwhm * scale}
 
 
 def param_apply_limits(param_limits, par, limits=True, values=True):
@@ -1231,7 +1237,7 @@ def get_amplitude_position(arr, mean=False):
             xpos = numpy.where(arr == amax)
 
         xmax = amax * _guess_ampl_scale
-        xmin = amax / _guess_ampl_scale
+        xmin = old_div(amax, _guess_ampl_scale)
         xval = amax
 
     elif((amax > 0.0 and amin < 0.0 and abs(amin) > amax ) or
@@ -1240,7 +1246,7 @@ def get_amplitude_position(arr, mean=False):
         if mean:
             xpos = numpy.where(arr == amin)
 
-        xmax = amin / _guess_ampl_scale
+        xmax = old_div(amin, _guess_ampl_scale)
         xmin = amin * _guess_ampl_scale
         xval = amin
     elif (amax == 0.0 and amin == 0.0):
@@ -1248,7 +1254,7 @@ def get_amplitude_position(arr, mean=False):
         if mean:
             xpos = numpy.where(arr == amax)
 
-        xmax = 100.0 / _guess_ampl_scale
+        xmax = old_div(100.0, _guess_ampl_scale)
         xmin = 0.0
         xval = 0.0
 
@@ -1289,24 +1295,24 @@ def guess_amplitude_at_ref(r, y, x, xhi=None):
 
     t = 1.0
     if x[1] > x[0] and r < x[0]:
-        t = numpy.abs(y[0] + y[1]) / 2.0
+        t = old_div(numpy.abs(y[0] + y[1]), 2.0)
     elif x[1] > x[0] and r > x[-1]:
-        t = numpy.abs(y[-1] + y[-2]) / 2.0
+        t = old_div(numpy.abs(y[-1] + y[-2]), 2.0)
     elif x[1] < x[0] and r > x[0]:
-        t = numpy.abs(y[0] + y[1]) / 2.0
+        t = old_div(numpy.abs(y[0] + y[1]), 2.0)
     elif x[1] < x[0] and r < x[-1]:
-        t = numpy.abs(y[-1] + y[-2]) / 2.0
+        t = old_div(numpy.abs(y[-1] + y[-2]), 2.0)
     else:
-        for i in xrange(len(x) - 1):
+        for i in range(len(x) - 1):
             if ((r >= x[i] and r < x[i + 1]) or (r >= x[i + 1] and r < x[i])):
-                t = numpy.abs(y[i] + y[i + 1]) / 2.0
+                t = old_div(numpy.abs(y[i] + y[i + 1]), 2.0)
                 break
 
     if t == 0.0:
         totband = 0.0
         dv = 0.0
         i = 1
-        for j in xrange(len(x) - 1):
+        for j in range(len(x) - 1):
             dv = x[i] - x[i - 1]
             t += y[i] * dv
             totband += dv
@@ -1314,7 +1320,7 @@ def guess_amplitude_at_ref(r, y, x, xhi=None):
         t /= totband
 
     return {'val': t,
-            'min': t / _guess_ampl_scale, 'max': t * _guess_ampl_scale}
+            'min': old_div(t, _guess_ampl_scale), 'max': t * _guess_ampl_scale}
 
 
 def guess_amplitude2d(y, x0lo, x1lo, x0hi=None, x1hi=None):
@@ -1352,9 +1358,9 @@ def guess_reference(pmin, pmax, x, xhi=None):
     if xmin < 1.0 and xmax > 1.0:
         val = 1.0
     else:
-        refval = numpy.floor((xmin + xmax) / 2.0)
+        refval = numpy.floor(old_div((xmin + xmax), 2.0))
         if refval < pmin or refval > pmax:
-            refval = (xmin + xmax) / 2.0
+            refval = old_div((xmin + xmax), 2.0)
         val = refval
 
     return {'val': val, 'min': None, 'max': None}
@@ -1408,9 +1414,9 @@ def guess_bounds(x, xhi=True):
     """
     xmin = x.min()
     xmax = x.max()
-    lo = xmin + (xmax - xmin) / 2.0
+    lo = xmin + old_div((xmax - xmin), 2.0)
     if xhi:
-        lo = xmin + (xmax - xmin) / 3.0
+        lo = xmin + old_div((xmax - xmin), 3.0)
         hi = xmin + 2.0 * (xmax - xmin) / 3.0
         return ({'val': lo, 'min': xmin, 'max': xmax},
                 {'val': hi, 'min': xmin, 'max': xmax})
@@ -1438,7 +1444,7 @@ def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
     rad = numpy.abs(10 * delta)
 
     return {'val': rad,
-            'min': rad / _guess_ampl_scale, 'max': rad * _guess_ampl_scale}
+            'min': old_div(rad, _guess_ampl_scale), 'max': rad * _guess_ampl_scale}
 
 
 def split_array(arr, m):
@@ -1478,7 +1484,7 @@ def split_array(arr, m):
 def worker(f, ii, chunk, out_q, err_q, lock):
 
     try:
-        vals = map(f, chunk)
+        vals = list(map(f, chunk))
     except Exception as e:
         err_q.put(e)
         return
@@ -1543,7 +1549,7 @@ def parallel_map(function, sequence, numcores=None):
     size = len(sequence)
 
     if not _multi or size == 1 or (numcores is not None and numcores < 2):
-        return map(function, sequence)
+        return list(map(function, sequence))
 
     if numcores is None:
         numcores = _ncpus
@@ -1583,14 +1589,14 @@ def neville2d(xinterp, yinterp, x, y, fval):
     nrow = fval.shape[0]
     # ncol = fval.shape[1]
     tmp = numpy.zeros(nrow)
-    for row in xrange(nrow):
+    for row in range(nrow):
         tmp[row] = neville(yinterp, y, fval[row])
     return neville(xinterp, x, tmp)
 
 ################################## Hessian ####################################
 
 
-class NumDeriv:
+class NumDeriv(object):
 
     def __init__(self, func, fval0):
         self.nfev, self.func = func_counter(func)
@@ -1640,7 +1646,7 @@ class NumDerivCentralOrdinary(NumDeriv):
     def __call__(self, x, h):
         if 0.0 == h:
             return numpy.Inf
-        return (self.func(x + h) - self.func(x - h)) / (2.0 * h)
+        return old_div((self.func(x + h) - self.func(x - h)), (2.0 * h))
 
 
 class NumDerivFowardPartial(NumDeriv):
@@ -1651,7 +1657,7 @@ class NumDerivFowardPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, old_div(1.0, 3.0))
 
         ith = args[0]
         jth = args[1]
@@ -1715,7 +1721,7 @@ class NumDerivCentralPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, 1.0 / 3.0)
+            h = pow(numpy.float_(numpy.finfo(numpy.float32)).eps, old_div(1.0, 3.0))
 
         ith = args[0]
         jth = args[1]
@@ -1756,7 +1762,7 @@ class NumDerivCentralPartial(NumDeriv):
             return fval
 
 
-class NoRichardsonExtrapolation:
+class NoRichardsonExtrapolation(object):
 
     def __init__(self, sequence, verbose=False):
         self.sequence = sequence
@@ -1790,17 +1796,17 @@ class RichardsonExtrapolation(NoRichardsonExtrapolation):
         richardson[0, 0] = self.sequence(x, h, *args)
 
         t_sqr = t * t
-        for ii in xrange(1, maxiter):
+        for ii in range(1, maxiter):
             h /= t
             richardson[ii, 0] = self.sequence(x, h, *args)
             ii_1 = ii - 1
-            for jj in xrange(1, ii + 1):
+            for jj in range(1, ii + 1):
                 # jjp1 = jj + 1  -- this variable is not used
                 jj_1 = jj - 1
                 factor = pow(t_sqr, jj)
                 factor_1 = factor - 1
-                richardson[ii, jj] = (factor * richardson[ii, jj_1] -
-                                      richardson[ii_1, jj_1] ) / factor_1
+                richardson[ii, jj] = old_div((factor * richardson[ii, jj_1] -
+                                      richardson[ii_1, jj_1] ), factor_1)
                 arg_jj = richardson[ii, jj]
                 arg_jj -= richardson[ii, jj_1]
                 arg_ii = richardson[ii, jj]
@@ -1822,27 +1828,27 @@ def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
     deriv = extrapolation(num_dif)
     npar = len(par)
     Hessian = numpy.zeros((npar, npar), dtype=numpy.float_)
-    for ii in xrange(npar):
-        for jj in xrange(ii + 1):
+    for ii in range(npar):
+        for jj in range(ii + 1):
             answer = deriv(par, t, tol, maxiter, h, ii, jj)
-            Hessian[ii, jj] = answer / 2.0
+            Hessian[ii, jj] = old_div(answer, 2.0)
             Hessian[jj, ii] = Hessian[ii, jj]
     return Hessian, num_dif.nfev[0]
 
 
 def print_low_triangle(matrix, num):
     # print matrix
-    for ii in xrange(num):
+    for ii in range(num):
         print(matrix[ii, 0]),
-        for jj in xrange(1, ii + 1):
+        for jj in range(1, ii + 1):
             print(matrix[ii, jj]),
-        print
+        print()
 
 
 def symmetric_to_low_triangle(matrix, num):
     low_triangle = []
-    for ii in xrange(num):
-        for jj in xrange(ii + 1):
+    for ii in range(num):
+        for jj in range(ii + 1):
             low_triangle.append(matrix[ii, jj])
     # print_low_triangle( matrix, num )
     # print low_triangle
@@ -1953,7 +1959,7 @@ def safe_div(num, denom):
     if 0.0 == num or denom > 1 and num < denom * dbl_min:
         return 0
 
-    return num / denom
+    return old_div(num, denom)
 
 
 def Knuth_boost_close(x, y, tol, myop=operator.__or__):
@@ -2011,11 +2017,11 @@ def mysgn(arg):
 
 # Is this ever used? It is checked for as an exception, so really should be
 # derived from an exception, but is never thrown, as far as I can see.
-class OutOfBoundErr:
+class OutOfBoundErr(object):
     pass
 
 
-class QuadEquaRealRoot:
+class QuadEquaRealRoot(object):
     """ solve for the real roots of the quadratic equation:
     a * x^2 + b * x + c = 0"""
 
@@ -2031,7 +2037,7 @@ class QuadEquaRealRoot:
                 # 0 * x^2 + b * x + c = 0
                 # the folowing still works even if c == 0
                 #
-                answer = - c / b
+                answer = old_div(- c, b)
                 return [answer, answer]
 
             else:
@@ -2059,7 +2065,7 @@ class QuadEquaRealRoot:
                 # a * x^2 + 0 * x + c = 0
                 if mysgn(a) == mysgn(c):
                     return [None, None]
-                answer = numpy.sqrt(c / a)
+                answer = numpy.sqrt(old_div(c, a))
                 return [-answer, answer]
 
         elif 0.0 == c:
@@ -2067,7 +2073,7 @@ class QuadEquaRealRoot:
             #
             # a * x^2 + b * x + 0 = 0
             #
-            return [0.0, - b / a]
+            return [0.0, old_div(- b, a)]
 
         else:
 
@@ -2075,8 +2081,8 @@ class QuadEquaRealRoot:
             # TODO: is this needed?
             debug("disc={}".format(discriminant))
             sqrt_disc = numpy.sqrt(discriminant)
-            t = - (b + mysgn(b) * sqrt_disc) / 2.0
-            return [c / t, t / a]
+            t = old_div(- (b + mysgn(b) * sqrt_disc), 2.0)
+            return [old_div(c, t), old_div(t, a)]
 
 
 def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
@@ -2105,10 +2111,10 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
 
             if abs(fa) > tol and abs(fb) > tol:
 
-                xc = (xa + xb) / 2.0
+                xc = old_div((xa + xb), 2.0)
                 fc = myfcn(xc, *args)
 
-                if abs(xa - xb) < min(tol * abs(xb), tol / 10.0):
+                if abs(xa - xb) < min(tol * abs(xb), old_div(tol, 10.0)):
                     return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
 
                 if mysgn(fa) !=  mysgn(fc):
@@ -2123,7 +2129,7 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
                     return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
 
-        xc = (xa + xb) / 2.0
+        xc = old_div((xa + xb), 2.0)
         fc = myfcn(xc, *args)
         return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
 
@@ -2205,11 +2211,11 @@ def transformed_quad_coef(x, f):
 
     xc_xb = xc - xb
     fc_fb = fc - fb
-    A = fc_fb / xc_xb
+    A = old_div(fc_fb, xc_xb)
     fb_fa = fb - fa
     xb_xa = xb - xa
     xc_xa = xc - xa
-    B = (A - fb_fa / xb_xa) / xc_xa
+    B = old_div((A - old_div(fb_fa, xb_xa)), xc_xa)
     C = A + B * xc_xb
     return [B, C]
 
@@ -2338,7 +2344,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         if is_sequence(x0, x, x1):
             return x
         else:
-            return (x0 + x1) / 2.0
+            return old_div((x0 + x1), 2.0)
 
     history = [[], []]
     nfev, myfcn = func_counter_history(fcn, history)
@@ -2362,7 +2368,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
 
         while nfev[0] < maxfev:
 
-            xc = (xa + xb) / 2.0
+            xc = old_div((xa + xb), 2.0)
             fc = myfcn(xc, *args)
             if abs(fc) <= tol:
                 return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
@@ -2457,7 +2463,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
-        xc = (xa + xb) / 2.0
+        xc = old_div((xa + xb), 2.0)
         fc = myfcn(xc, *args)
         # print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
         if abs(fc) <= tol:
@@ -2497,7 +2503,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
 
             # sanity check
             if not is_sequence(xa, x, xb):
-                x = (xa + xb) / 2.0
+                x = old_div((xa + xb), 2.0)
 
             y = myfcn(x, *args)
             # print 'MullerBound() y(%.14e)=%.14e' % (x,y)
@@ -2521,7 +2527,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                 xc, fc = x, y
                 oldx = x
             else:
-                xmid = (xa + xb) / 2.0
+                xmid = old_div((xa + xb), 2.0)
                 fmid = myfcn(xmid, *args)
                 if abs(fmid) < abs(fbest):
                     xbest, fbest = xmid, fmid
@@ -2534,7 +2540,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                 else:
                     xa = xmid
                     fa = fmid
-                xc = (xa + xb) / 2.0
+                xc = old_div((xa + xb), 2.0)
                 fc = myfcn(xc, *args)
                 if abs(fc) < abs(fbest):
                     xbest, fbest = xc, fc
@@ -2629,8 +2635,8 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
                 xb, fb = xc, fc
                 xc, fc = xa, fa
 
-            tol_act = 2.0 * DBL_EPSILON * abs(xb) + tol / 2.0
-            new_step = (xc - xb) / 2.0
+            tol_act = 2.0 * DBL_EPSILON * abs(xb) + old_div(tol, 2.0)
+            new_step = old_div((xc - xb), 2.0)
 
             if abs(fb) <= tol:
                 return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
@@ -2653,13 +2659,13 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
                 cb = xc - xb
                 if xa == xc:
-                    t1 = fb / fa
+                    t1 = old_div(fb, fa)
                     p = cb * t1
                     q = 1.0 - t1
                 else:
-                    t1 = fb / fc
-                    t2 = fb / fa
-                    q = fa / fc
+                    t1 = old_div(fb, fc)
+                    t2 = old_div(fb, fa)
+                    q = old_div(fa, fc)
                     p = t2 * (cb * q * (q - t1) - (xb - xa) * (t1 - 1.0))
                     q = (q - 1.0) * (t1 - 1.0) * (t2 - 1.0)
 
@@ -2670,7 +2676,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
                 if 2 * p < (1.5 * cb * q - abs(tol_act * q)) and \
                    2 * p < abs(prev_step * q):
-                    new_step = p / q
+                    new_step = old_div(p, q)
 
             if abs(new_step) < tol_act:
                 if new_step > 0:

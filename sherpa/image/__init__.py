@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import str
+from past.utils import old_div
 # 
 #  Copyright (C) 2007  Smithsonian Astrophysical Observatory
 #
@@ -259,7 +262,7 @@ class RatioImage(Image):
         bad = numpy.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
-        return (data / model)
+        return (old_div(data, model))
 
     def prepare_image(self, data, model):
         self.y = data.get_img(model)

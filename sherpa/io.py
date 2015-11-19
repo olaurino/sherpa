@@ -1,3 +1,4 @@
+from builtins import range
 # 
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
@@ -90,7 +91,7 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
     names = [name.strip(bad_chars) for name in raw_names if name != '']
 
     if len(names) == 0:
-        names = ['col%i' % (i+1) for i in xrange(len(args))]
+        names = ['col%i' % (i+1) for i in range(len(args))]
 
     return names, args
 

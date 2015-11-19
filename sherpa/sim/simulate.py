@@ -21,6 +21,10 @@
 """
 Classes for PPP simulations
 """
+from __future__ import division
+from builtins import str
+from past.utils import old_div
+from builtins import object
 
 from sherpa.stats import Cash, CStat
 from sherpa.optmethods import NelderMead
@@ -129,7 +133,7 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         return s
 
 
-class worker():
+class worker(object):
     def __init__(self, null_fit, alt_fit, null_vals, alt_vals):
         self.null_fit = null_fit
         self.alt_fit = alt_fit
@@ -287,7 +291,7 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
         statistics = numpy.asarray(statistics)
 
-        pppvalue = numpy.sum( statistics[:,2] > LR ) / (1.0*niter)
+        pppvalue = old_div(numpy.sum( statistics[:,2] > LR ), (1.0*niter))
 
         debug('ppp value = '+str(pppvalue))
 

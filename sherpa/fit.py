@@ -1,4 +1,10 @@
 from __future__ import print_function
+from __future__ import division
+from builtins import map
+from builtins import str
+from builtins import next
+from builtins import range
+from past.utils import old_div
 #
 #  Copyright (C) 2009, 2015  Smithsonian Astrophysical Observatory
 #
@@ -208,8 +214,8 @@ class FitResults(NoNewAttributesAfterInit):
         if (isinstance(fit.stat, (CStat, WStat, Chi2)) and
                 not isinstance(fit.stat, LeastSq)):
             if _dof > 0 and results[2] >= 0.0:
-                _qval = igamc(_dof / 2., results[2] / 2.)
-                _rstat = results[2] / _dof
+                _qval = igamc(old_div(_dof, 2.), old_div(results[2], 2.))
+                _rstat = old_div(results[2], _dof)
             else:
                 _rstat = nan
 
@@ -255,7 +261,7 @@ class FitResults(NoNewAttributesAfterInit):
         if 'itermethodname' not in state:
             self.__dict__['itermethodname'] = 'none'
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.succeeded
 
     def __repr__(self):
@@ -291,10 +297,10 @@ class FitResults(NoNewAttributesAfterInit):
         s += '\nChange in statistic   = %g' % self.dstatval
 
         if self.covarerr is None:
-            for name, val in izip(self.parnames, self.parvals):
+            for name, val in zip(self.parnames, self.parvals):
                 s += '\n   %-12s   %-12g' % (name, val)
         else:
-            for name, val, covarerr in izip(self.parnames, self.parvals, self.covarerr):
+            for name, val, covarerr in zip(self.parnames, self.parvals, self.covarerr):
                 s += '\n   %-12s   %-12g +/- %-12g' % (name, val, covarerr)
 
         if self.param_warnings != "":
@@ -323,7 +329,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.fitname = type(fit.method).__name__.lower()
         self.statname = type(fit.stat).__name__.lower()
         self.sigma = fit.estmethod.sigma
-        self.percent = erf(self.sigma / sqrt(2.0)) * 100.0
+        self.percent = erf(old_div(self.sigma, sqrt(2.0))) * 100.0
         self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
         self.parvals = tuple(p.val for p in parlist if not p.frozen)
         self.parmins = ()
@@ -385,7 +391,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
             str += hfmt % ('Param', 'Best-Fit', 'Lower Bound', 'Upper Bound')
             str += hfmt % ('-' * 5, '-' * 8, '-' * 11, '-' * 11)
 
-            for name, val, lower, upper in izip(self.parnames, self.parvals,
+            for name, val, lower, upper in zip(self.parnames, self.parvals,
                                                 self.parmins, self.parmaxes):
 
                 str += '\n   %-12s %12g ' % (name, val)
@@ -406,8 +412,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
             return str
 
-        low = map(is_iterable, self.parmins)
-        high = map(is_iterable, self.parmaxes)
+        low = list(map(is_iterable, self.parmins))
+        high = list(map(is_iterable, self.parmaxes))
         in_low = is_in(True, low)
         in_high = is_in(True, high)
         mymethod = self.methodname == 'confidence'
@@ -499,7 +505,7 @@ class IterFit(NoNewAttributesAfterInit):
                 # at least one of the backscals is a numpy array
                 bkg = bkg_backscal
                 src = src_backscal
-            return bkg / src
+            return old_div(bkg, src)
 
         result = {'bkg': None, 'backscale_ratio': None, 'data_size': None,
                   'exposure_time': None}
@@ -512,7 +518,7 @@ class IterFit(NoNewAttributesAfterInit):
 
         data_size = zeros(len_datasets, dtype=int)
         exposure_time = zeros(2 * len_datasets)
-        for index in xrange(len_datasets):
+        for index in range(len_datasets):
             mydata = self.data.datasets[index]
             if hasattr(mydata, 'response_ids') and \
                     hasattr(mydata, 'background_ids') and \
@@ -822,8 +828,8 @@ class IterFit(NoNewAttributesAfterInit):
                     # For each data set, compute
                     # (data - model) / staterror
                     # over filtered data space
-                    residuals = (d.get_dep(True) - d.eval_model_to_fit(
-                        next(model_iterator))) / d.get_staterror(True, self.stat.calc_staterror)
+                    residuals = old_div((d.get_dep(True) - d.eval_model_to_fit(
+                        next(model_iterator))), d.get_staterror(True, self.stat.calc_staterror))
 
                     # For each modeled value that exceeds
                     # sigma thresholds, set the corresponding
@@ -834,7 +840,7 @@ class IterFit(NoNewAttributesAfterInit):
 
                     j = 0
                     kmin = 0
-                    for i in xrange(0, ressize):
+                    for i in range(0, ressize):
                         while (newmask[j] == False and
                                j < filsize):
                             j = j + 1
@@ -849,7 +855,7 @@ class IterFit(NoNewAttributesAfterInit):
                             kmax = j + grow
                             if (kmax >= filsize):
                                 kmax = filsize - 1
-                            for k in xrange(kmin, kmax + 1):
+                            for k in range(kmin, kmax + 1):
                                 newmask[k] = False
                         j = j + 1
 
@@ -1066,8 +1072,8 @@ class Fit(NoNewAttributesAfterInit):
         if (isinstance(self.stat, (CStat, Chi2)) and
                 not isinstance(self.stat, LeastSq)):
             if stat >= 0.0:
-                qval = igamc(dof / 2., stat / 2.)
-            rstat = stat / dof
+                qval = igamc(old_div(dof, 2.), old_div(stat, 2.))
+            rstat = old_div(stat, dof)
 
         name = self.stat.name
 
@@ -1231,7 +1237,7 @@ class Fit(NoNewAttributesAfterInit):
                 raise EstErr('nodegfreedom')
 
             if (hasattr(self.estmethod, "max_rstat") and
-                    (self.calc_stat() / dof) > self.estmethod.max_rstat):
+                    (old_div(self.calc_stat(), dof)) > self.estmethod.max_rstat):
                 # raise FitError('reduced statistic larger than ' +
                 #               str(self.estmethod.max_rstat))
                 raise EstErr('rstat>max', str(self.estmethod.max_rstat))

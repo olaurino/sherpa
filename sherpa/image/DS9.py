@@ -134,6 +134,10 @@ History:
 2008-05-28 Stephen Doe  Always raise exception on error (doRaise=True always)
 2008-11-25 Stephen Doe  Search PATH for access to application, rather than shell out to use 'which' -- PATH sometimes not correctly inherited by shell via Popen, for csh on some Mac, Solaris machines.
 """
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import object
 __all__ = ["setup", "xpaget", "xpaset", "DS9Win"]
 
 import numpy as num
@@ -217,10 +221,10 @@ def setup(doRaise=True, debug=False):
     try:
         ds9Dir, xpaDir = _findDS9AndXPA()
         if debug:
-            print "ds9Dir=%r\npaDir=%r" % (ds9Dir, xpaDir)
+            print("ds9Dir=%r\npaDir=%r" % (ds9Dir, xpaDir))
     except (SystemExit, KeyboardInterrupt):
         raise
-    except Exception, e:
+    except Exception as e:
         _ex = e
         _SetupError = "DS9Win unusable: %s" % (e,)
         ds9Dir = xpaDir = None
@@ -387,7 +391,7 @@ def _formatOptions(kargs):
     """Returns a string: "key1=val1,key2=val2,..."
     (where keyx and valx are string representations)
     """
-    arglist = ["%s=%s" % keyVal for keyVal in kargs.iteritems()]
+    arglist = ["%s=%s" % keyVal for keyVal in kargs.items()]
     return '%s' % (','.join(arglist))
 
 
@@ -400,12 +404,12 @@ def _splitDict(inDict, keys):
     """
     outDict = {}
     for key in keys:
-        if inDict.has_key(key):
+        if key in inDict:
             outDict[key] = inDict.pop(key)
     return outDict	
 
 
-class DS9Win:
+class DS9Win(object):
     """An object that talks to a particular window on ds9
 
     Inputs:
@@ -543,7 +547,7 @@ class DS9Win:
                 dataFunc = arr.tofile,
         )
 
-        for keyValue in kargs.iteritems():
+        for keyValue in kargs.items():
             self.xpaset(cmd=' '.join(keyValue))
 
 # showBinFile is commented out because it is broken with ds9 3.0.3
@@ -592,9 +596,9 @@ class DS9Win:
         # remove array info keywords from kargs; we compute all that
         arrKeys = _splitDict(kargs, _ArrayKeys)
         if arrKeys:
-            raise RuntimeErr('badarr', arrKeys.keys())
+            raise RuntimeErr('badarr', list(arrKeys.keys()))
 
-        for keyValue in kargs.iteritems():
+        for keyValue in kargs.items():
             self.xpaset(cmd=' '.join(keyValue))
 
     def xpaget(self, cmd):
@@ -642,6 +646,6 @@ class DS9Win:
 if __name__ == "__main__":
     errStr = setup(doRaise=True, debug=True)
     if errStr:
-        print errStr
+        print(errStr)
     else:
         ds9Win = DS9Win("Test")

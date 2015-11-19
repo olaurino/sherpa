@@ -1,3 +1,5 @@
+from __future__ import division
+from past.utils import old_div
 # 
 #  Copyright (C) 2011  Smithsonian Astrophysical Observatory
 #
@@ -115,8 +117,8 @@ class KNNInterpolator(InterpolatingTemplateModel):
         if self._distances[0][1]==0:
             return self.template_model.templates[self._distances[0][0]]
         k_distances = self._distances[:self.k]
-        weights = [(idx, 1/numpy.array(distance)) for idx, distance in k_distances]
-        sum_weights = sum([1/weight for idx, weight in k_distances])
+        weights = [(idx, old_div(1,numpy.array(distance))) for idx, distance in k_distances]
+        sum_weights = sum([old_div(1,weight) for idx, weight in k_distances])
         y_out = numpy.zeros(len(x_out))
         for idx, weight in weights:
             y_out += self.template_model.templates[idx].calc((weight,), x_out)
