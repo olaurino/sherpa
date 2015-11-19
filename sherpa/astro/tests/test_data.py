@@ -1,4 +1,4 @@
-# 
+#
 #  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,6 +22,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.utils import SherpaTestCase, test_data_missing
 from sherpa.all import *
 from sherpa.astro.all import *
+from sherpa.astro import ui
 import logging
 logger = logging.getLogger('sherpa')
 
@@ -248,6 +249,14 @@ class test_filter_wave_grid(SherpaTestCase):
         self.pha.ignore(0.1, 6.0)        
         assert (self._ignore==numpy.asarray(self.pha.mask)).all()
 
+class test_grouping(SherpaTestCase):
+    def test_grouping_basic(self):
+        ui.load_arrays("grouping", [1, 2, 3, 4, 5, 6, 7], [0, 1, 2, 3, 7, 8, 10], DataPHA)
+        numpy.testing.assert_array_equal(ui.get_counts("grouping"), [0, 1, 2, 3, 7, 8, 10])
+        self.assertEqual(ui.get_counts("grouping").sum(), 31)
+        ui.group_counts("grouping", 5)
+        numpy.testing.assert_array_equal(ui.get_counts("grouping"), [6, 7, 8, 10])
+        self.assertEqual(ui.get_counts("grouping").sum(), 31)
 
 if __name__ == '__main__':
 
