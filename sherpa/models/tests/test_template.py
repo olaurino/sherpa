@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,10 +18,9 @@
 #
 
 
-import unittest
 from sherpa.models import TableModel, Gauss1D
 from sherpa.models.template import create_template_model
-from sherpa.utils import SherpaTest, SherpaTestCase, requires_data
+from sherpa.utils.test import SherpaTest, SherpaTestCase, requires_data
 from sherpa.utils.err import ModelErr
 from sherpa import ui
 import numpy

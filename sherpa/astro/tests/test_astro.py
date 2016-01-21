@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import unittest
 import logging
 import os
 import os.path
-from sherpa.utils import SherpaTestCase
-from sherpa.utils import requires_data, requires_fits, requires_xspec
+from sherpa.utils.test import SherpaTestCase, requires_data, \
+    requires_fits, requires_xspec
 import sherpa.astro.ui as ui
 from sherpa.astro.data import DataPHA
 
@@ -35,6 +34,7 @@ except ImportError:
     has_xspec = False
 
 # has_xspec = has_package_from_list("sherpa.astro.xspec")
+
 
 @requires_data
 class test_threads(SherpaTestCase):
@@ -74,7 +74,6 @@ class test_threads(SherpaTestCase):
         self.locals = {}
         os.chdir(self.make_path('ciao4.3', name))
         execfile(scriptname, {}, self.locals)
-
 
     @requires_fits
     @requires_xspec
