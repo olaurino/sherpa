@@ -19,7 +19,11 @@
 
 from sherpa import smoke
 import pytest
-import mock
+
+try:  # Python 3
+    from unittest import mock
+except ImportError:  # Python 2
+    import mock
 
 
 def test_success():
