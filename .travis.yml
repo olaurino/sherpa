@@ -103,7 +103,7 @@ before_install:
     fi
 
 install:
-  - python setup.py $INSTALL_TYPE
+    - python setup.py -q $INSTALL_TYPE
 
 script:
   - if [ -n "${XSPECVER}" ]; then XSPECTEST="-x"; fi
