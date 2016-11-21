@@ -55,7 +55,7 @@ env: FITS="pyfits" INSTALL_TYPE=develop TEST=submodule MATPLOTLIBVER=1.4 TRAVIS_
 before_install:
   - export LIBGFORTRANVER="1.0"
   - export SHERPA_CHANNEL=https://conda.anaconda.org/sherpa
-  - export MINICONDA=/home/travis/miniconda
+  - export MINICONDA=$HOME/miniconda
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p $MINICONDA
