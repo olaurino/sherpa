@@ -122,6 +122,7 @@ script:
   # Run BDD features
   - pip install -r test_requirements.txt # apparently required because otherwise coverage does not find it, will fix later.
   - coverage run --source='.' -m behave
+  - coverage report
 
 notifications:
   email:
