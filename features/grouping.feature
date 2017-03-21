@@ -22,4 +22,4 @@ Feature: Grouping
     Examples: Counts
       | x                | y              | group counts  | quality                             |
       | np.arange(1, 101)| np.ones_like(x)| 20            | np.zeros_like(x)                    |
-      | np.arange(1, 101)| np.ones_like(x)| 33            | np.append(np.zeros_like(x[0:-1]),2) |
+      | np.arange(1, 101)| np.ones_like(x)| 33            | np.append(np.zeros(x.size-1),2) |
