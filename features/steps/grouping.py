@@ -85,3 +85,13 @@ def step_impl(context, quality):
     expected = globals()['q']
     actual = context.session.get_data().quality
     assert_array_equal(expected, actual)
+
+
+@step("I ignore the bad channels")
+def step_impl(context):
+    """
+    Parameters
+    ----------
+    context : behave.runner.Context
+    """
+    context.session.ignore_bad()
