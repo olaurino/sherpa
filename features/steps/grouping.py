@@ -37,14 +37,15 @@ def step_impl(context):
     context.session = Session()
 
 
-@given("the following x and y arrays")
-def step_impl(context):
+@given("{x} and {y} as x and y arrays")
+def step_impl(context, x, y):
     """
     Parameters
     ----------
     context : behave.runner.Context
     """
-    exec(context.text, locals(), globals())
+    exec("x="+x, locals(), globals())
+    exec("y="+y, locals(), globals())
     context.session.load_arrays(1, globals()['x'], globals()['y'], DataPHA)
 
 
@@ -68,4 +69,19 @@ def step_impl(context, final_counts):
     """
     expected = list(map(int, final_counts.split(',')))
     actual = context.session.get_data().get_dep(filter=True)
+    assert_array_equal(expected, actual)
+
+
+@then("the dependent axis has a {quality} quality array")
+def step_impl(context, quality):
+    """
+    Parameters
+    ----------
+    context : behave.runner.Context
+    final_counts: str
+    quality : str
+    """
+    exec("q="+quality, locals(), globals())
+    expected = globals()['q']
+    actual = context.session.get_data().quality
     assert_array_equal(expected, actual)
