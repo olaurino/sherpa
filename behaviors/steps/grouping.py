@@ -20,7 +20,9 @@
 from behave import *
 
 import numpy as np
+
 from numpy.testing import assert_array_equal
+
 from sherpa.astro.data import DataPHA
 from sherpa.astro.ui.utils import Session
 
@@ -47,23 +49,27 @@ def step_impl(context):
     context.session.load_arrays(1, x, y, DataPHA)
 
 
-@when("I group group data with 20 counts each")
-def step_impl(context):
+@when("I group data with {number} counts each")
+def step_impl(context, number):
     """
     Parameters
     ----------
     context : behave.runner.Context
     """
-    context.session.group_counts(20)
+    number = int(number)
+    context.session.group_counts(number)
 
 
-@then("the filtered dependent axis has 5 channels with 20 counts each")
-def step_impl(context):
+@then("the filtered dependent axis has {num_channels} channels with {num_counts} each")
+def step_impl(context, num_channels, num_counts):
     """
     Parameters
     ----------
     context : behave.runner.Context
     """
-    expected = np.full(5, 20, dtype='float64')
+    num_channels = int(num_channels)
+    num_counts = int(num_counts)
+
+    expected = np.full(num_channels, num_counts, dtype='float64')
     actual = context.session.get_data().get_dep(filter=True)
     assert_array_equal(expected, actual)
