@@ -37,16 +37,15 @@ def step_impl(context):
     context.session = Session()
 
 
-@given("a simple array of ones in channels from 1 to 100 loaded in session as PHA")
+@given("the following x and y arrays")
 def step_impl(context):
     """
     Parameters
     ----------
     context : behave.runner.Context
     """
-    x = np.arange(1, 101)
-    y = np.ones_like(x)
-    context.session.load_arrays(1, x, y, DataPHA)
+    exec(context.text, locals(), globals())
+    context.session.load_arrays(1, globals()['x'], globals()['y'], DataPHA)
 
 
 @when("I group data with {number} counts each")
@@ -60,16 +59,13 @@ def step_impl(context, number):
     context.session.group_counts(number)
 
 
-@then("the filtered dependent axis has {num_channels} channels with {num_counts} each")
-def step_impl(context, num_channels, num_counts):
+@then("the filtered dependent axis has {final_counts} counts in channels")
+def step_impl(context, final_counts):
     """
     Parameters
     ----------
     context : behave.runner.Context
     """
-    num_channels = int(num_channels)
-    num_counts = int(num_counts)
-
-    expected = np.full(num_channels, num_counts, dtype='float64')
+    expected = list(map(int, final_counts.split(',')))
     actual = context.session.get_data().get_dep(filter=True)
     assert_array_equal(expected, actual)
