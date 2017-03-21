@@ -1,6 +1,6 @@
 Feature: Grouping
 
-  Scenario Outline: Simple Grouping
+  Scenario Outline: Grouping Counts
     Given a sherpa session
     And <x> and <y> as x and y arrays
     When I group data with <group counts> counts each
@@ -11,12 +11,14 @@ Feature: Grouping
       | np.arange(1, 101)| np.ones_like(x)| 20            | 20, 20, 20, 20, 20    |
       | np.arange(1, 101)| np.ones_like(x)| 33            | 33, 33, 33, 1         |
 
-  Scenario Outline: Simple Grouping and Quality
+
+
+  Scenario Outline: Grouping Counts and Quality
     Given a sherpa session
     And <x> and <y> as x and y arrays
     When I group data with <group counts> counts each
     Then the dependent axis has a <quality> quality array
-    
+
     Examples: Counts
       | x                | y              | group counts  | quality                             |
       | np.arange(1, 101)| np.ones_like(x)| 20            | np.zeros_like(x)                    |
