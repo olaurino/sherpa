@@ -19,8 +19,6 @@
 
 from behave import *
 
-import numpy as np
-
 from numpy.testing import assert_array_equal
 
 from sherpa.astro.data import DataPHA
@@ -44,8 +42,8 @@ def step_impl(context, x, y):
     ----------
     context : behave.runner.Context
     """
-    exec("x="+x, locals(), globals())
-    exec("y="+y, locals(), globals())
+    exec("x="+x, globals(), globals())
+    exec("y="+y, globals(), globals())
     context.session.load_arrays(1, globals()['x'], globals()['y'], DataPHA)
 
 
@@ -78,10 +76,9 @@ def step_impl(context, quality):
     Parameters
     ----------
     context : behave.runner.Context
-    final_counts: str
     quality : str
     """
-    exec("q="+quality, locals(), globals())
+    exec("q="+quality, globals(), globals())
     expected = globals()['q']
     actual = context.session.get_data().quality
     assert_array_equal(expected, actual)
@@ -95,3 +92,23 @@ def step_impl(context):
     context : behave.runner.Context
     """
     context.session.ignore_bad()
+
+
+@when("I notice channels from {min} to {max}")
+def step_impl(context, min, max):
+    """
+    Parameters
+    ----------
+    context : behave.runner.Context
+    """
+    context.session.notice(min, max)
+
+
+@step('I type {command}')
+def step_impl(context, command):
+    """
+    Parameters
+    ----------
+    context : behave.runner.Context
+    """
+    exec(command, globals(), globals())
