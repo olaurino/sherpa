@@ -20,11 +20,14 @@
 """
 Tools for creating, storing, inspecting, and manipulating data sets
 """
+import abc
 
+from six import add_metaclass
 from six.moves import zip as izip
 import sys
 import inspect
 import numpy
+import functools
 from sherpa.utils.err import DataErr, NotImplementedErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
      print_fields, create_expr, calc_total_error, bool_cast, \
@@ -34,29 +37,9 @@ from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt', 'Data2D', 'Data2DInt')
 
 
+@add_metaclass(abc.ABCMeta)
 class BaseData(NoNewAttributesAfterInit):
     "Base class for all data set types"
-
-    def _get_filter(self):
-        return self._filter
-    def _set_filter(self, val):
-        self._filter = val
-        self._mask = True
-    filter = property(_get_filter, _set_filter,
-                      doc='Filter for dependent variable')
-
-    def _get_mask(self):
-        return self._mask
-    def _set_mask(self, val):
-        if (val is True) or (val is False):
-            self._mask = val
-        elif (val is None) or numpy.isscalar(val):
-            raise DataErr('ismask')
-        else:
-            self._mask = numpy.asarray(val, numpy.bool_)
-        self._filter = None
-    mask = property(_get_mask, _set_mask,
-                    doc='Mask array for dependent variable')
 
     def __init__(self):
         """
@@ -79,9 +62,6 @@ class BaseData(NoNewAttributesAfterInit):
 
         """
 
-        if type(self) is BaseData:
-            raise NotImplementedErr('noinstanceallowed', 'BaseData')
-
         frame = sys._getframe().f_back
         cond = (frame.f_code is self.__init__.__func__.__code__)
         assert cond, (('%s constructor must call BaseData constructor ' +
@@ -100,6 +80,14 @@ class BaseData(NoNewAttributesAfterInit):
 
         NoNewAttributesAfterInit.__init__(self)
 
+    @abc.abstractmethod
+    def get_dep(self, filter=True):
+        pass
+
+    @abc.abstractmethod
+    def get_indep(self, filter=True):
+        pass
+
     def __str__(self):
         """
 
@@ -111,52 +99,6 @@ class BaseData(NoNewAttributesAfterInit):
         fields = self._fields + getattr(self, '_extra_fields', ())
         fdict = dict(izip(fields, [getattr(self, f) for f in fields]))
         return print_fields(fields, fdict)
-
-    def apply_filter(self, data):
-        if data is not None:
-            if self.filter is not None:
-                if callable(self.filter):
-                    data = self.filter(data)
-                else:
-                    data = data[self.filter]
-            elif self.mask is not True:
-                if self.mask is False:
-                    raise DataErr('notmask')
-                data = numpy.asarray(data)
-                if data.shape != self.mask.shape:
-                    raise DataErr('mismatch', 'mask', 'data array')
-                data = data[self.mask]
-        return data
-
-    def ignore(self, *args, **kwargs):
-        kwargs['ignore'] = True
-        self.notice(*args, **kwargs)
-
-    def notice(self, mins, maxes, axislist, ignore=False):
-
-        ignore = bool_cast(ignore)
-        if( str in [type(min) for min in mins] ):
-            raise DataErr('typecheck', 'lower bound')
-        elif( str in [type(max) for max in maxes] ):
-            raise DataErr('typecheck', 'upper bound')
-        elif( str in [type(axis) for axis in axislist] ):
-            raise DataErr('typecheck', 'grid')
-
-        mask = filter_bins(mins, maxes, axislist)
-
-        if mask is None:
-            self.mask = not ignore
-        elif not ignore:
-            if self.mask is True:
-                self.mask = mask
-            else:
-                self.mask |= mask
-        else:
-            mask = ~mask
-            if self.mask is False:
-                self.mask = mask
-            else:
-                self.mask &= mask
 
 
 class Data(BaseData):
@@ -575,16 +517,6 @@ class DataND(Data):
 class Data1D(DataND):
     "1-D data set"
 
-    def _set_mask(self, val):
-        DataND._set_mask(self, val)
-        try:
-            self._x = self.apply_filter(self.x)
-        except DataErr:
-            self._x = self.x
-
-    mask = property(DataND._get_mask, _set_mask,
-                    doc='Mask array for dependent variable')
-
     def __init__(self, name, x, y, staterror=None, syserror=None):
         self._x = x
         BaseData.__init__(self)
@@ -600,32 +532,6 @@ class Data1D(DataND):
 
     def get_dims(self, filter=False):
         return (len(self.get_x(filter)),)
-
-    def get_filter(self, format='%.4f', delim=':'):
-        # for derived intergrated classes, this will return values in center of
-        # bin.
-        x = self.get_x(filter=True)
-        mask = numpy.ones(len(x), dtype=bool)
-        if numpy.iterable(self.mask):
-            mask = self.mask
-        return create_expr(x, mask, format, delim)
-
-    def get_filter_expr(self):
-        return (self.get_filter(delim='-') + ' ' + self.get_xlabel())
-
-    def get_bounding_mask(self):
-        mask = self.mask
-        size = None
-        if numpy.iterable(self.mask):
-            # create bounding box around noticed image regions
-            mask = numpy.array(self.mask)
-#            xi = numpy.where(mask == True)[0]
-#            xlo = xi.min()
-#            xhi = xi.max()
-#            size = (mask[xlo:xhi+1].size,)
-#            mask = mask[xlo:xhi+1]
-            size = (mask.size,)
-        return mask, size
 
     def get_img(self, yfunc=None):
         "Return 1D dependent variable as a 1 x N image"
@@ -650,18 +556,6 @@ class Data1D(DataND):
 class Data1DInt(Data1D):
     "1-D integrated data set"
 
-    def _set_mask(self, val):
-        DataND._set_mask(self, val)
-        try:
-            self._lo = self.apply_filter(self.xlo)
-            self._hi = self.apply_filter(self.xhi)
-        except DataErr:
-            self._lo = self.xlo
-            self._hi = self.xhi
-
-    mask = property(DataND._get_mask, _set_mask,
-                    doc='Mask array for dependent variable')
-
     def __init__(self, name, xlo, xhi, y, staterror=None, syserror=None):
         self._lo = xlo
         self._hi = xhi
@@ -681,25 +575,9 @@ class Data1DInt(Data1D):
         xlo,xhi = self.get_indep(filter)
         return xhi-xlo
 
-    def notice(self, xlo=None, xhi=None, ignore=False):
-        BaseData.notice(self, (None, xlo), (xhi, None), self.get_indep(),
-                        ignore)
-
 
 class Data2D(DataND):
     "2-D data set"
-
-    def _set_mask(self, val):
-        DataND._set_mask(self, val)
-        try:
-            self._x0 = self.apply_filter(self.x0)
-            self._x1 = self.apply_filter(self.x1)
-        except DataErr:
-            self._x0 = self.x0
-            self._x1 = self.x1
-
-    mask = property(DataND._get_mask, _set_mask,
-                    doc='Mask array for dependent variable')
 
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None):
@@ -730,11 +608,6 @@ class Data2D(DataND):
         if self.shape is not None:
             return self.shape[::-1]
         return (len(self.get_x0(filter)), len(self.get_x1(filter)))
-
-    def get_filter_expr(self):
-        return ''
-
-    get_filter = get_filter_expr
 
     def _check_shape(self):
         if self.shape is None:
@@ -770,29 +643,9 @@ class Data2D(DataND):
             err = err.reshape(*self.shape)
         return err
 
-    def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
-        BaseData.notice(self, (x0lo, x1lo), (x0hi, x1hi), self.get_indep(),
-                        ignore)
-
 
 class Data2DInt(Data2D):
     "2-D integrated data set"
-
-    def _set_mask(self, val):
-        DataND._set_mask(self, val)
-        try:
-            self._x0lo = self.apply_filter(self.x0lo)
-            self._x0hi = self.apply_filter(self.x0hi)
-            self._x1lo = self.apply_filter(self.x1lo)
-            self._x1hi = self.apply_filter(self.x1hi)
-        except DataErr:
-            self._x0lo = self.x0lo
-            self._x1lo = self.x1lo
-            self._x0hi = self.x0hi
-            self._x1hi = self.x1hi
-
-    mask = property(DataND._get_mask, _set_mask,
-                    doc='Mask array for dependent variable')
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None):
@@ -815,7 +668,3 @@ class Data2DInt(Data2D):
     def get_x1(self, filter=False):
         indep = self.get_indep(filter)
         return (indep[1] + indep[3]) / 2.0
-
-    def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
-        BaseData.notice(self, (None, None, x0lo, x1lo),
-                        (x0hi, x1hi, None, None), self.get_indep(), ignore)

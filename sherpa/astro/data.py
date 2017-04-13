@@ -245,33 +245,6 @@ class DataRMF(Data1DInt):
 class DataPHA(Data1DInt):
     "PHA data set, including any associated instrument and background data"
 
-    mask = property(BaseData._get_mask, BaseData._set_mask)
-
-    def _get_grouped(self):
-        return self._grouped
-
-    def _set_grouped(self, val):
-        val = bool(val)
-
-        if val and (self.grouping is None):
-            raise DataErr('nogrouping', self.name)
-
-        # If grouping status is being changed, we need to reset the mask
-        # to be correct size, while still noticing groups within the filter
-        if self._grouped != val:
-            do_notice = numpy.iterable(self.mask)
-            if do_notice:
-                old_filter = self.get_filter(val)
-                self._grouped = val
-                self.ignore()
-                for vals in parse_expr(old_filter):
-                    self.notice(*vals)
-            # self.mask = True
-
-        self._grouped = val
-
-    grouped = property(_get_grouped, _set_grouped, doc='Are the data grouped?')
-
     def _get_subtracted(self):
         return self._subtracted
 
