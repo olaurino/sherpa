@@ -24,28 +24,12 @@ Classes for storing, inspecting, and manipulating astronomical data sets
 import os.path
 import numpy
 from sherpa.data import BaseData, Data1DInt, Data2D, DataND
-from sherpa.utils.err import DataErr, ImportErr
-from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
-    create_expr, parse_expr, bool_cast, rebin, filter_bins
+from sherpa.utils.err import DataErr
+from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, bool_cast, rebin, filter_bins
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid or Region symbols.
-from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
-    compile_energy_grid, do_group, expand_grouped_mask, \
-    Region, region_mask
-
-import logging
-warning = logging.getLogger(__name__).warning
-
-groupstatus = False
-try:
-    import group as pygroup
-    groupstatus = True
-except:
-    groupstatus = False
-    warning('the group module (from the CIAO tools package) is not ' +
-            'installed.\nDynamic grouping functions will not be available.')
-
+from sherpa.astro.utils import arf_fold, rmf_fold, compile_energy_grid, Region, region_mask
 
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt')
 
@@ -84,8 +68,6 @@ def _notice_resp(chans, arf, rmf):
 
 class DataARF(Data1DInt):
     "ARF data set"
-
-    mask = property(BaseData._get_mask, BaseData._set_mask)
 
     def _get_specresp(self):
         return self._specresp
@@ -135,15 +117,6 @@ class DataARF(Data1DInt):
 
         return model
 
-    def notice(self, bin_mask=None):
-        self._rsp = self.specresp
-        self._lo = self.energ_lo
-        self._hi = self.energ_hi
-        if bin_mask is not None:
-            self._rsp = self.specresp[bin_mask]
-            self._lo = self.energ_lo[bin_mask]
-            self._hi = self.energ_hi[bin_mask]
-
     def get_indep(self, filter=False):
         filter = bool_cast(filter)  # QUS: is this to validate filter?
         return (self._lo, self._hi)
@@ -162,8 +135,6 @@ class DataARF(Data1DInt):
 
 class DataRMF(Data1DInt):
     "RMF data set"
-
-    mask = property(BaseData._get_mask, BaseData._set_mask)
 
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
@@ -207,23 +178,6 @@ class DataRMF(Data1DInt):
 
         return rmf_fold(src, self._grp, self._fch, self._nch, self._rsp,
                         self.detchans, self.offset)
-
-    def notice(self, noticed_chans=None):
-        bin_mask = None
-        self._fch = self.f_chan
-        self._nch = self.n_chan
-        self._grp = self.n_grp
-        self._rsp = self.matrix
-        self._lo = self.energ_lo
-        self._hi = self.energ_hi
-        if noticed_chans is not None:
-            (self._grp, self._fch, self._nch, self._rsp,
-             bin_mask) = filter_resp(noticed_chans, self.n_grp, self.f_chan,
-                                     self.n_chan, self.matrix, self.offset)
-            self._lo = self.energ_lo[bin_mask]
-            self._hi = self.energ_hi[bin_mask]
-
-        return bin_mask
 
     def get_indep(self, filter=False):
         filter = bool_cast(filter)  # QUS: is this to validate filter?
@@ -356,6 +310,18 @@ class DataPHA(Data1DInt):
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
+        self.name = name
+        self.channel = channel
+        self.counts = counts
+        self.staterror = staterror
+        self.syserror = syserror
+        self.bin_lo = bin_lo
+        self.bin_hi = bin_hi
+        self.quality = quality
+        self.exposure = exposure
+        self.backscal = backscal
+        self.areascal = areascal
+        self.header = header
         self._grouped = (grouping is not None)
         self._original_groups = True
         self._subtracted = False
@@ -713,453 +679,6 @@ class DataPHA(Data1DInt):
             areascal = self._check_scale(areascal, group, filter)
         return areascal
 
-    def apply_filter(self, data, groupfunc=numpy.sum):
-        """
-
-        Filter the array data, first passing it through apply_grouping()
-        (using groupfunc) and then applying the general filters
-
-        """
-        if (data is None):
-            return data
-        elif len(data) != len(self.counts):
-            counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
-            mask = self.get_mask()
-            if mask is not None:
-                counts[mask] = numpy.asarray(data, dtype=SherpaFloat)
-                data = counts
-            # else:
-            #     raise DataErr('mismatch', "filter", "data array")
-        return Data1DInt.apply_filter(self,
-                                      self.apply_grouping(data, groupfunc))
-
-    def apply_grouping(self, data, groupfunc=numpy.sum):
-        """
-
-        Apply the data set's grouping scheme to the array data,
-        combining the grouped data points with groupfunc, and return
-        the grouped array.  If the data set has no associated grouping
-        scheme or the data are ungrouped, data is returned unaltered.
-
-        """
-        if (data is None) or (not self.grouped):
-            return data
-
-        groups = self.grouping
-        filter = self.quality_filter
-        if filter is None:
-            return do_group(data, groups, groupfunc.__name__)
-
-        if (len(data) != len(filter) or len(groups) != len(filter)):
-            raise DataErr('mismatch', "quality filter", "data array")
-
-        filtered_data = numpy.asarray(data)[filter]
-        groups = numpy.asarray(groups)[filter]
-        grouped_data = do_group(filtered_data, groups, groupfunc.__name__)
-
-        if data is self.channel and groupfunc is self._make_groups:
-            return numpy.arange(1, len(grouped_data) + 1, dtype=int)
-
-        return grouped_data
-
-    def ignore_bad(self):
-        """Exclude channels marked as bad.
-
-        Ignore any bin in the PHA data set which has a quality value
-        that is larger than zero.
-
-        Raises
-        ------
-        sherpa.utils.err.DataErr
-           If the data set has no quality array.
-
-        See Also
-        --------
-        ignore : Exclude data from the fit.
-        notice : Include data in the fit.
-
-        Notes
-        -----
-        Bins with a non-zero quality setting are not automatically
-        excluded when a data set is created.
-
-        If the data set has been grouped, then calling `ignore_bad`
-        will remove any filter applied to the data set. If this
-        happens a warning message will be displayed.
-
-        """
-        if self.quality is None:
-            raise DataErr("noquality", self.name)
-
-        qual_flags = ~numpy.asarray(self.quality, bool)
-
-        if self.grouped and (self.mask is not True):
-            self.notice()
-            warning('filtering grouped data with quality flags,' +
-                    ' previous filters deleted' )
-
-        elif not self.grouped:
-            # if ungrouped, create/combine with self.mask
-            if self.mask is not True:
-                self.mask = self.mask & qual_flags
-                return
-            else:
-                self.mask = qual_flags
-                return
-
-        # self.quality_filter used for pre-grouping filter
-        self.quality_filter = qual_flags
-
-    def _dynamic_group(self, group_func, *args, **kwargs):
-
-        keys = list(kwargs.keys())[:]
-        for key in keys:
-            if kwargs[key] is None:
-                kwargs.pop(key)
-
-        old_filter = self.get_filter(group=False)
-        do_notice = numpy.iterable(self.mask)
-
-        self.grouping, self.quality = group_func(*args, **kwargs)
-        self.group()
-        self._original_groups = False
-
-        if do_notice:
-            # self.group() above has cleared the filter if applicable
-            # No, that just sets a flag.  So manually clear filter
-            # here
-            self.ignore()
-            for vals in parse_expr(old_filter):
-                self.notice(*vals)
-
-        # warning('grouping flags have changed, noticing all bins')
-
-    # Have to move this check here; as formerly written, reference
-    # to pygroup functions happened *before* checking groupstatus,
-    # in _dynamic_group.  So we did not return the intended error
-    # message; rather, a NameError was raised stating that pygroup
-    # did not exist in global scope (not too clear to the user).
-    #
-    # The groupstatus check thus has to be done in *each* of the following
-    # group functions.
-
-    # # Dynamic grouping functions now automatically impose the
-    # # same grouping conditions on *all* associated background data sets.
-    # # CIAO 4.5 bug fix, 05/01/2012
-    def group_bins(self, num, tabStops=None):
-        """Group into a fixed number of bins.
-
-        Combine the data so that there `num` equal-width bins (or
-        groups). The binning scheme is applied to all the channels,
-        but any existing filter - created by the `ignore` or `notice`
-        set of functions - is re-applied after the data has been
-        grouped.
-
-        Parameters
-        ----------
-        num : int
-           The number of bins in the grouped data set. Each bin
-           will contain the same number of channels.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
-
-        See Also
-        --------
-        group_adapt : Adaptively group to a minimum number of counts.
-        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
-        group_counts : Group into a minimum number of counts per bin.
-        group_snr : Group into a minimum signal-to-noise ratio.
-        group_width : Group into a fixed bin width.
-
-        Notes
-        -----
-        Since the bin width is an integer number of channels, it is
-        likely that some channels will be "left over". This is even
-        more likely when the `tabStops` parameter is set. If this
-        happens, a warning message will be displayed to the screen and
-        the quality value for these channels will be set to 2.
-
-        """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpNumBins, len(self.channel), num,
-                            tabStops=tabStops)
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_bins")):
-                bkg.group_bins(num, tabStops=tabStops)
-
-    def group_width(self, val, tabStops=None):
-        """Group into a fixed bin width.
-
-        Combine the data so that each bin contains `num` channels.
-        The binning scheme is applied to all the channels, but any
-        existing filter - created by the `ignore` or `notice` set of
-        functions - is re-applied after the data has been grouped.
-
-        Parameters
-        ----------
-        val : int
-           The number of channels to combine into a group.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
-
-        See Also
-        --------
-        group_adapt : Adaptively group to a minimum number of counts.
-        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
-        group_bins : Group into a fixed number of bins.
-        group_counts : Group into a minimum number of counts per bin.
-        group_snr : Group into a minimum signal-to-noise ratio.
-
-        Notes
-        -----
-        Unless the requested bin width is a factor of the number of
-        channels (and no `tabStops` parameter is given), then some
-        channels will be "left over". If this happens, a warning
-        message will be displayed to the screen and the quality value
-        for these channels will be set to 2.
-
-        """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpBinWidth, len(self.channel), val,
-                            tabStops=tabStops)
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_width")):
-                bkg.group_width(val, tabStops=tabStops)
-
-    def group_counts(self, num, maxLength=None, tabStops=None):
-        """Group into a minimum number of counts per bin.
-
-        Combine the data so that each bin contains `num` or more
-        counts. The binning scheme is applied to all the channels, but
-        any existing filter - created by the `ignore` or `notice` set
-        of functions - is re-applied after the data has been grouped.
-        The background is *not* included in this calculation; the
-        calculation is done on the raw data even if `subtract` has
-        been called on this data set.
-
-        Parameters
-        ----------
-        num : int
-           The number of channels to combine into a group.
-        maxLength : int, optional
-           The maximum number of channels that can be combined into a
-           single group.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
-
-        See Also
-        --------
-        group_adapt : Adaptively group to a minimum number of counts.
-        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
-        group_bins : Group into a fixed number of bins.
-        group_snr : Group into a minimum signal-to-noise ratio.
-        group_width : Group into a fixed bin width.
-
-        Notes
-        -----
-        If channels can not be placed into a "valid" group, then a
-        warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2.
-
-        """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpNumCounts, self.counts, num,
-                            maxLength=maxLength, tabStops=tabStops)
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_counts")):
-                bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
-
-    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
-    def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
-        """Group into a minimum signal-to-noise ratio.
-
-        Combine the data so that each bin has a signal-to-noise ratio
-        which exceeds `snr`. The binning scheme is applied to all the
-        channels, but any existing filter - created by the `ignore` or
-        `notice` set of functions - is re-applied after the data has
-        been grouped.  The background is *not* included in this
-        calculation; the calculation is done on the raw data even if
-        `subtract` has been called on this data set.
-
-        Parameters
-        ----------
-        snr : number
-           The minimum signal-to-noise ratio that must be exceeded
-           to form a group of channels.
-        maxLength : int, optional
-           The maximum number of channels that can be combined into a
-           single group.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
-        errorCol : array of num, optional
-           If set, the error to use for each channel when calculating
-           the signal-to-noise ratio. If not given then Poisson
-           statistics is assumed. A warning is displayed for each
-           zero-valued error estimate.
-
-        See Also
-        --------
-        group_adapt : Adaptively group to a minimum number of counts.
-        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
-        group_bins : Group into a fixed number of bins.
-        group_counts : Group into a minimum number of counts per bin.
-        group_width : Group into a fixed bin width.
-
-        Notes
-        -----
-        If channels can not be placed into a "valid" group, then a
-        warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2.
-
-        """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpSnr, self.counts, snr,
-                            maxLength=maxLength, tabStops=tabStops,
-                            errorCol=errorCol)
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_snr")):
-                bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
-                              errorCol=errorCol)
-
-    def group_adapt(self, minimum, maxLength=None, tabStops=None):
-        """Adaptively group to a minimum number of counts.
-
-        Combine the data so that each bin contains `num` or more
-        counts. The difference to `group_counts` is that this
-        algorithm starts with the bins with the largest signal, in
-        order to avoid over-grouping bright features, rather than at
-        the first channel of the data. The adaptive nature means that
-        low-count regions between bright features may not end up in
-        groups with the minimum number of counts.  The binning scheme
-        is applied to all the channels, but any existing filter -
-        created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
-
-        Parameters
-        ----------
-        minimum : int
-           The number of channels to combine into a group.
-        maxLength : int, optional
-           The maximum number of channels that can be combined into a
-           single group.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
-
-        See Also
-        --------
-        group_adapt_snr : Adaptively group to a minimum signal-to-noise ratio.
-        group_bins : Group into a fixed number of bins.
-        group_counts : Group into a minimum number of counts per bin.
-        group_snr : Group into a minimum signal-to-noise ratio.
-        group_width : Group into a fixed bin width.
-
-        Notes
-        -----
-        If channels can not be placed into a "valid" group, then a
-        warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2.
-
-        """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpAdaptive, self.counts, minimum,
-                            maxLength=maxLength, tabStops=tabStops)
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_adapt")):
-                bkg.group_adapt(minimum, maxLength=maxLength,
-                                tabStops=tabStops)
-
-    ### DOC-TODO: see discussion in astro.ui.utils regarding errorCol
-    def group_adapt_snr(self, minimum, maxLength=None, tabStops=None,
-                        errorCol=None):
-        """Adaptively group to a minimum signal-to-noise ratio.
-
-        Combine the data so that each bin has a signal-to-noise ratio
-        which exceeds `minimum`. The difference to `group_snr` is that
-        this algorithm starts with the bins with the largest signal,
-        in order to avoid over-grouping bright features, rather than
-        at the first channel of the data. The adaptive nature means
-        that low-count regions between bright features may not end up
-        in groups with the minimum number of counts.  The binning
-        scheme is applied to all the channels, but any existing filter
-        - created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
-
-        Parameters
-        ----------
-        minimum : number
-           The minimum signal-to-noise ratio that must be exceeded
-           to form a group of channels.
-        maxLength : int, optional
-           The maximum number of channels that can be combined into a
-           single group.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
-        errorCol : array of num, optional
-           If set, the error to use for each channel when calculating
-           the signal-to-noise ratio. If not given then Poisson
-           statistics is assumed. A warning is displayed for each
-           zero-valued error estimate.
-
-        See Also
-        --------
-        group_adapt : Adaptively group to a minimum number of counts.
-        group_bins : Group into a fixed number of bins.
-        group_counts : Group into a minimum number of counts per bin.
-        group_snr : Group into a minimum signal-to-noise ratio.
-        group_width : Group into a fixed bin width.
-
-        Notes
-        -----
-        If channels can not be placed into a "valid" group, then a
-        warning message will be displayed to the screen and the
-        quality value for these channels will be set to 2.
-
-        """
-        if not groupstatus:
-            raise ImportErr('importfailed', 'group', 'dynamic grouping')
-        self._dynamic_group(pygroup.grpAdaptiveSnr, self.counts, minimum,
-                            maxLength=maxLength, tabStops=tabStops,
-                            errorCol=errorCol)
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
-            if (hasattr(bkg, "group_adapt_snr")):
-                bkg.group_adapt_snr(minimum, maxLength=maxLength,
-                                    tabStops=tabStops, errorCol=errorCol)
-
     def eval_model(self, modelfunc):
         return modelfunc(*self.get_indep(filter=False))
 
@@ -1212,25 +731,25 @@ class DataPHA(Data1DInt):
 
         return bkgsum / SherpaFloat(nbkg)
 
-    def get_dep(self, filter=False):
+    def _get_dep(self):
         # FIXME: Aneta says we need to group *before* subtracting, but that
         # won't work (I think) when backscal is an array
         # if not self.subtracted:
         #     return self.counts
         # return self.counts - self.sum_background_data()
         dep = self.counts
-        filter = bool_cast(filter)
         if self.subtracted:
             bkg = self.sum_background_data()
             if len(dep) != len(bkg):
                 raise DataErr("subtractlength")
             dep = dep - bkg
-        if filter:
-            dep = self.apply_filter(dep)
         return dep
 
+    @property
+    def y(self):
+        return self._get_dep()
+
     def set_dep(self, val):
-        dep = None
         if numpy.iterable(val):
             dep = numpy.asarray(val, SherpaFloat)
         else:
@@ -1523,178 +1042,6 @@ class DataPHA(Data1DInt):
     def _sum_sq(array):
         return numpy.sqrt(numpy.sum(array * array))
 
-    def get_noticed_channels(self):
-        chans = self.channel
-        mask = self.get_mask()
-        if mask is not None:
-            chans = chans[mask]
-        return chans
-
-    def get_mask(self):
-        groups = self.grouping
-        if self.mask is False:
-            return None
-
-        if self.mask is True or not self.grouped:
-            if self.quality_filter is not None:
-                return self.quality_filter
-            elif numpy.iterable(self.mask):
-                return self.mask
-            return None
-
-        if self.quality_filter is not None:
-            groups = groups[self.quality_filter]
-        return expand_grouped_mask(self.mask, groups)
-
-    def get_noticed_expr(self):
-        chans = self.get_noticed_channels()
-        if self.mask is False or len(chans) == 0:
-            return 'No noticed channels'
-        return create_expr(chans, format='%i')
-
-    def get_filter(self, group=True, format='%.12f', delim=':'):
-        """
-        Integrated values returned are measured from center of bin
-        """
-        if self.mask is False:
-            return 'No noticed bins'
-
-        x = self.get_noticed_channels()  # ungrouped noticed channels
-        if group:
-            # grouped noticed channels
-            x = self.apply_filter(self.channel, self._make_groups)
-
-        # convert channels to appropriate quantity if necessary.
-        x = self._from_channel(x, group=group)  # knows the units underneath
-
-        if self.units in ('channel',):
-            format = '%i'
-
-        mask = numpy.ones(len(x), dtype=bool)
-        if numpy.iterable(self.mask):
-            mask = self.mask
-
-        if self.units in ('wavelength',):
-            x = x[::-1]
-            mask = mask[::-1]
-        return create_expr(x, mask, format, delim)
-
-    def get_filter_expr(self):
-        return (self.get_filter(format='%.4f', delim='-') +
-                ' ' + self.get_xlabel())
-
-    def notice_response(self, notice_resp=True, noticed_chans=None):
-        notice_resp = bool_cast(notice_resp)
-
-        if notice_resp and noticed_chans is None:
-            noticed_chans = self.get_noticed_channels()
-
-        for id in self.response_ids:
-            arf, rmf = self.get_response(id)
-            _notice_resp(noticed_chans, arf, rmf)
-
-    def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
-        # If any background IDs are actually given, then impose
-        # the filter on those backgrounds *only*, and return.  Do
-        # *not* impose filter on data itself.  (Revision possibly
-        # this should be done in high-level UI?)  SMD 10/25/12
-
-        filter_background_only = False
-        if (bkg_id is not None):
-            if (not(numpy.iterable(bkg_id))):
-                bkg_id = [bkg_id]
-            filter_background_only = True
-        else:
-            bkg_id = self.background_ids
-
-        # Automatically impose data's filter on background data sets.
-        # Units must agree for this to be meaningful, so temporarily
-        # make data and background units match. SMD 10/25/12
-        for bid in bkg_id:
-            bkg = self.get_background(bid)
-            old_bkg_units = bkg.units
-            bkg.units = self.units
-            bkg.notice(lo, hi, ignore)
-            bkg.units = old_bkg_units
-
-        # If we're only supposed to filter backgrounds, return
-        if filter_background_only:
-            return
-
-        # Go on if we are also supposed to filter the source data
-        ignore = bool_cast(ignore)
-        if lo is None and hi is None:
-            self.quality_filter = None
-            self.notice_response(False)
-
-        elo, ehi = self._get_ebins()
-        if lo is not None and type(lo) != str:
-            lo = self._to_channel(lo)
-        if hi is not None and type(hi) != str:
-            hi = self._to_channel(hi)
-
-        if ((self.units == "wavelength" and
-             elo[0] < elo[-1] and ehi[0] < ehi[-1]) or
-            (self.units == "energy" and
-             elo[0] > elo[-1] and ehi[0] > ehi[-1])):
-            lo, hi = hi, lo
-
-        # If we are working in channel space, and the data are
-        # grouped, we must correct for the fact that bounds expressed
-        # expressed in channels must be converted to group number.
-        # This is the only set of units for which this must be done;
-        # energy and wavelength conversions above already take care of
-        # the distinction between grouped and ungrouped.
-
-        if self.units == "channel" and self.grouped:
-
-            if lo is not None and type(lo) != str and \
-               not(lo < self.channel[0]):
-
-                # Find the location of the first channel greater than
-                # or equal to lo in self.channel
-                # Then find out how many groups there are that contain
-                # the channels less than lo, and convert lo from a
-                # channel number to the first group number that has channels
-                # greater than or equal to lo.
-
-                lo_index = numpy.where(self.channel >= lo)[0][0]
-                lo = len(numpy.where(self.grouping[:lo_index] > -1)[0]) + 1
-
-            if hi is not None and type(hi) != str and \
-               not(hi > self.channel[-1]):
-
-                # Find the location of the first channel greater than
-                # or equal to hi in self.channel
-                # Then find out how many groups there are that contain
-                # the channels less than hi, and convert hi from a
-                # channel number to the first group number that has channels
-                # greater than or equal to hi.
-                hi_index = numpy.where(self.channel >= hi)[0][0]
-                hi = len(numpy.where(self.grouping[:hi_index] > -1)[0])
-
-                # If the original channel hi starts a new group,
-                # increment the group number
-                if (self.grouping[hi_index] > -1):
-                    hi = hi + 1
-
-                # If the original channel hi is in a group such that
-                # the group has channels greater than original hi,
-                # then use the previous group as the highest group included
-                # in the filter. Avoid indexing beyond the end of the
-                # grouping array.
-                if (hi_index + 1 < len(self.grouping)):
-                    if not(self.grouping[hi_index + 1] > -1):
-                        hi = hi - 1
-
-        # Don't use the middle of the channel anymore as the
-        # grouping function.  That was just plain dumb.
-        # So just get back an array of groups 1-N, if grouped
-        BaseData.notice(self, (lo,), (hi,),
-                        (self.apply_grouping(self.channel,
-                                             self._make_groups),),
-                        ignore)
-
     def to_guess(self):
         elo, ehi = self._get_ebins(group=False)
         elo = self.apply_filter(elo, self._min)
@@ -1728,14 +1075,6 @@ class DataPHA(Data1DInt):
                 self.get_xerr(True, response_id=response_id),
                 self.get_xlabel(),
                 self.get_ylabel())
-
-    def group(self):
-        "Group the data according to the data set's grouping scheme"
-        self.grouped = True
-
-    def ungroup(self):
-        "Ungroup the data"
-        self.grouped = False
 
     def subtract(self):
         "Subtract the background data"
@@ -2120,9 +1459,6 @@ class DataIMGInt(DataIMG):
             self._x1lo = self.x1lo
             self._x0hi = self.x0hi
             self._x1hi = self.x1hi
-
-    mask = property(DataND._get_mask, _set_mask,
-                    doc='Mask array for dependent variable')
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,

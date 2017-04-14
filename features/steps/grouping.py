@@ -71,7 +71,7 @@ def step_impl(context, number):
     """
     number = int(number)
     context.session.group_counts(number)
-    print(context.session.get_data().get_noticed_channels())
+    # print(context.session.get_data().get_noticed_channels())
 
 
 @then("the filtered dependent axis has {final_counts} counts in channels")
@@ -126,7 +126,7 @@ def step_impl(context, what, min, max):
     elif what == 'energy':
         context.session.set_analysis("energy")  # will fail if there is no response matrix
     context.session.notice(float(min), float(max))
-    print(context.session.get_data().get_noticed_channels())
+    # print(context.session.get_data().get_noticed_channels())
 
 
 @step('I type {command}')

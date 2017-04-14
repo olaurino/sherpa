@@ -22,26 +22,132 @@ Tools for creating, storing, inspecting, and manipulating data sets
 """
 import abc
 
+import logging
 from six import add_metaclass
 from six.moves import zip as izip
-import sys
 import inspect
 import numpy
-import functools
-from sherpa.utils.err import DataErr, NotImplementedErr
-from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
-     print_fields, create_expr, calc_total_error, bool_cast, \
-     filter_bins
+from sherpa.utils.err import DataErr, ImportErr
+from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, print_fields, calc_total_error, bool_cast
 
 
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt', 'Data2D', 'Data2DInt')
 
+warning = logging.getLogger(__name__).warning
+
+group_status = False
+try:
+    import group as pygroup
+    group_status = True
+except ImportError:
+    group_status = False
+    pygroup = None
+    warning('the group module (from the CIAO tools package) is not ' +
+            'installed.\nDynamic grouping functions will not be available.')
+
+
+class GroupingManager(object):
+    def __init__(self, data_set):
+        self.data_set = data_set
+        self.grouping = None
+        self.quality = None
+
+    def group_counts(self, num, max_length, tab_stops):
+        if not group_status:
+            raise ImportErr('importfailed', 'group', 'dynamic grouping')
+
+        self._group(pygroup.grpNumCounts, self.data_set.y, num,
+                    maxLength=max_length, tabStops=tab_stops)
+
+        if hasattr(self.data_set, "background_ids"):
+            for bkg_id in self.data_set.background_ids:
+                bkg = self.data_set.get_background(bkg_id)
+                if hasattr(bkg, "group_counts"):
+                    bkg.group_counts(num, maxLength=max_length, tabStops=tab_stops)
+
+    def apply(self, data, groupfunc=sum):
+        if data is None:
+            return data
+
+        group_flags = self.grouping
+
+        quality_filter = None
+        if self.quality is not None:
+            quality_filter = ~numpy.asarray(self.quality, bool)
+
+        if quality_filter is None:
+            return self._reduce_groups(data, group_flags, groupfunc)
+
+        if len(data) != len(quality_filter) or len(group_flags) != len(quality_filter):
+            raise DataErr('mismatch', "quality filter", "data array")
+
+        filtered_data = numpy.asarray(data)[quality_filter]
+        group_flags = numpy.asarray(group_flags)[quality_filter]
+        grouped_data = self._reduce_groups(filtered_data, group_flags, groupfunc)
+
+        # if data is self.channel and groupfunc is self._make_groups:
+        #     return numpy.arange(1, len(grouped_data) + 1, dtype=int)
+
+        return grouped_data
+
+    def _group(self, group_func, *args, **kwargs):
+        kwargs = self._extract_args(**kwargs)
+        self.grouping, self.quality = group_func(*args, **kwargs)
+
+    @staticmethod
+    def _reduce_groups(data, group_flags, func):
+        grouped_data = []
+        group_indexes = []
+
+        for idx, group_flag in enumerate(group_flags):
+            if group_flag >= 1:
+                group_indexes.append(idx)
+
+        # None as the last index makes sure the array is consumed entirely, below
+        group_indexes.append(None)
+
+        for idx, group_index in enumerate(group_indexes[:-1]):
+            counts = func(data[group_index:group_indexes[idx+1]])
+            grouped_data.append(counts)
+
+        return grouped_data
+
+    @staticmethod
+    def _extract_args(**kwargs):
+        keys = list(kwargs.keys())[:]
+        for key in keys:
+            if kwargs[key] is None:
+                kwargs.pop(key)
+        return kwargs
+
+
+class QualityManager(object):
+    def __init__(self, grouping_manager):
+        # type: (GroupingManager) -> None
+        self.grouping_manager = grouping_manager
+        self._quality = None
+
+    @property
+    def quality(self):
+        grouping_quality = self.grouping_manager.quality
+
+        if grouping_quality is not None and self._quality is not None:
+            return numpy.maximum(grouping_quality, self._quality)
+        elif grouping_quality is not None:
+            return grouping_quality
+        else:
+            return self._quality
+
+    @quality.setter
+    def quality(self, quality_array):
+        self._quality = quality_array
+
 
 @add_metaclass(abc.ABCMeta)
 class BaseData(NoNewAttributesAfterInit):
-    "Base class for all data set types"
+    """Base class for all data set types"""
 
-    def __init__(self):
+    def __new__(cls, *args, **kwags):
         """
 
         Initialize a data object.  This method can only be called from
@@ -62,31 +168,50 @@ class BaseData(NoNewAttributesAfterInit):
 
         """
 
-        frame = sys._getframe().f_back
-        cond = (frame.f_code is self.__init__.__func__.__code__)
-        assert cond, (('%s constructor must call BaseData constructor ' +
-                       'directly') % type(self).__name__)
-        args = inspect.getargvalues(frame)
+        # frame = inspect.currentframe().f_back
+        # cond = (frame.f_code is self.__init__.__func__.__code__)
+        # assert cond, (('%s constructor must call BaseData constructor ' +
+        #                'directly') % type(self).__name__)
+        # args = inspect.getargvalues(frame)
+        #
+        # self._fields = tuple(args[0][1:])
+        # for f in self._fields:
+        #     cond = (f not in vars(self))
+        #     assert cond, "'%s' object already has attribute '%s'" % (type(self).__name__, f)
+        #     setattr(self, f, args[3][f])
 
-        self._fields = tuple(args[0][1:])
-        for f in self._fields:
-            cond = (f not in vars(self))
-            assert cond, (("'%s' object already has attribute '%s'") %
-                          (type(self).__name__, f))
-            setattr(self, f, args[3][f])
+        obj = object.__new__(cls)
+        obj._grouping_manager = GroupingManager(obj)
+        obj._quality_manager = QualityManager(obj._grouping_manager)
 
-        self.filter = None
-        self.mask = True
+        return obj
 
-        NoNewAttributesAfterInit.__init__(self)
+        # NoNewAttributesAfterInit.__init__(self)
+
+    def get_dep(self, filter=True):
+        dep = self._get_dep()
+        if filter:
+            return self._grouping_manager.apply(dep)
+        return dep
 
     @abc.abstractmethod
-    def get_dep(self, filter=True):
-        pass
+    def _get_dep(self):
+        return numpy.array([])
 
     @abc.abstractmethod
     def get_indep(self, filter=True):
-        pass
+        return numpy.array([])
+
+    @property
+    def quality(self):
+        return self._quality_manager.quality
+
+    @quality.setter
+    def quality(self, quality_array):
+        self._quality_manager.quality = quality_array
+
+    def group_counts(self, num, maxLength=None, tabStops=None):
+        self._grouping_manager.group_counts(num, maxLength, tabStops)
 
     def __str__(self):
         """
@@ -160,35 +285,6 @@ class Data(BaseData):
         if filter:
             indep = tuple([self.apply_filter(x) for x in indep])
         return indep
-
-    def get_dep(self, filter=False):
-        """Return the dependent axis of a data set.
-
-        Parameters
-        ----------
-        filter : bool, optional
-           Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
-
-        Returns
-        -------
-        axis: array
-           The dependent axis values for the data set. This gives
-           the value of each point in the data set.
-
-        See Also
-        --------
-        get_indep : Return the independent axis of a data set.
-        get_error : Return the errors on the dependent axis of a data set.
-        get_staterror : Return the statistical errors on the dependent axis of a data set.
-        get_syserror : Return the systematic errors on the dependent axis of a data set.
-
-        """
-        dep = getattr(self, 'dep', None)
-        filter=bool_cast(filter)
-        if filter:
-            dep = self.apply_filter(dep)
-        return dep
 
     def get_staterror(self, filter=False, staterrfunc=None):
         """Return the statistical error on the dependent axis of a data set.
@@ -496,11 +592,8 @@ class DataSimulFit(Data):
 class DataND(Data):
     "Base class for Data1D, Data2D, etc."
 
-    def get_dep(self, filter=False):
+    def _get_dep(self):
         y = self.y
-        filter=bool_cast(filter)
-        if filter:
-            y = self.apply_filter(y)
         return y
 
     def set_dep(self, val):
@@ -518,7 +611,11 @@ class Data1D(DataND):
     "1-D data set"
 
     def __init__(self, name, x, y, staterror=None, syserror=None):
+        self.name = name
         self._x = x
+        self.y = y
+        self.staterror = staterror
+        self.syserror = syserror
         BaseData.__init__(self)
 
     def get_indep(self, filter=False):
