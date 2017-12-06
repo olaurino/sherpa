@@ -116,22 +116,6 @@ def _import_from_dotted_path(dotted_names, path=None):
     return _import_from_dotted_path(remaining_names, path=module.__path__)
 
 
-@pytest.fixture(params=["chips", "pylab"])
-def non_existent(request):
-    """
-    Fixture for error handling tests making sure that a backup
-    implementation is used when the known backends are not available.
-
-    This fixture ensures that the environment correctly emulates the lack
-    of backends, even when they are actually available.
-    :param request:
-    :return:
-    """
-    clean_modules()
-    plot_backend = _load_plotter_backend(request.param)
-    return request.param, plot_backend
-
-
 class PyChipsSpec(object):
 
     """
@@ -225,21 +209,7 @@ def test_backend(patch_module):
     assert plot_backend.initialize_backend is not None
 
 
-def test_backend_import_error(non_existent):
-    """
-    test that dummy_backend is selected and imported when an error
-    occurs importing an existing one.
-
-    :param non_existent: the fixture required by this test
-    :return:
-    """
-    backend_name, plot_backend = non_existent
-    assert backend_name == plot_backend.name
-    assert "dummy_backend" == plot_backend.backend_module.name
-    assert plot_backend.initialize_backend is not None
-
-
-def test_dummy_warnings(non_existent):
+def test_dummy_warnings():
     """
     test that warnings are issued when the dummy backend is selected
     and its functions called.

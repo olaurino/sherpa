@@ -118,12 +118,12 @@ def test_model_factory_usermodel():
     assert model_comps["usermodel"]["model_name"] == "usermodel"
 
 
-@mock.patch("sherpa.ui.create_model_component")
-def test_model_factory_template_usermodel(_):
-    model = mock.MagicMock(spec=UserModel)
-    model.name = "somemodel.mymodel__ID"
+def test_model_factory_template_usermodel():
+    with mock.patch("sherpa.ui.create_model_component"):
+        model = mock.MagicMock(spec=UserModel)
+        model.name = "somemodel.mymodel__ID"
 
-    model, model_comps = create_stack_model(model, "1")
+        model, model_comps = create_stack_model(model, "1")
 
     assert len(model_comps) == 1
     assert "mymodel" in model_comps
@@ -144,33 +144,33 @@ def test_model_factory_error_model_name():
         create_stack_model(model, "model")
 
 
-@mock.patch.object(builtins, 'eval')
-def test_model_wrapper(eval, model_fixture):
-    model = model_fixture[0]
-    model_class_name = model_fixture[2]
+def test_model_wrapper(model_fixture):
+    with mock.patch.object(builtins, 'eval'):
+        model = model_fixture[0]
+        model_class_name = model_fixture[2]
 
-    eval.return_value = model
+        eval.return_value = model
 
-    func = mock.MagicMock()
-    func.__name__ = "sample function"
-    func.__doc__ = "sample doc"
+        func = mock.MagicMock()
+        func.__name__ = "sample function"
+        func.__doc__ = "sample doc"
 
-    dataset = mock.MagicMock()
-    dataset.__getitem__.side_effect = lambda x: "TESTID" if x == "id" else dict()
+        dataset = mock.MagicMock()
+        dataset.__getitem__.side_effect = lambda x: "TESTID" if x == "id" else dict()
 
-    datastack = mock.MagicMock(spec=DataStack)
-    datastack.filter_datasets.return_value = (dataset,)
+        datastack = mock.MagicMock(spec=DataStack)
+        datastack.filter_datasets.return_value = (dataset,)
 
-    wrapper = model_wrapper(func)
-    assert wrapper.__name__ == func.__name__
-    assert wrapper.__doc__ == func.__doc__
+        wrapper = model_wrapper(func)
+        assert wrapper.__name__ == func.__name__
+        assert wrapper.__doc__ == func.__doc__
 
-    with mock.patch(model_class_name, autospec=True):
-        wrapper(datastack, "model")
+        with mock.patch(model_class_name, autospec=True):
+            wrapper(datastack, "model")
 
-    expected = model.val if hasattr(model, 'val') else model
-    func.assert_called_once_with("TESTID", mock.ANY)
-    assert isinstance(func.call_args[0][1], expected.__class__)
+        expected = model.val if hasattr(model, 'val') else model
+        func.assert_called_once_with("TESTID", mock.ANY)
+        assert isinstance(func.call_args[0][1], expected.__class__)
 
 
 def test_simple_wrapper():
