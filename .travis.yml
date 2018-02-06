@@ -40,7 +40,6 @@ matrix:
 
 before_install:
   # General configurations
-  - export LIBGFORTRANVER="3.0"
   - export SHERPA_CHANNEL=sherpa
   - export XSPEC_CHANNEL=cxc/channel/dev
   - export MINICONDA=/home/travis/miniconda
@@ -64,7 +63,7 @@ before_install:
 
   # Create and activate conda build environment
   # We create a new environment so we don't care about the python version in the root environment.
-  - conda create --yes --quiet -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} libgfortran=$LIBGFORTRANVER $XSPEC $FITS
+  - conda create --yes --quiet -n build python=$TRAVIS_PYTHON_VERSION pip ${MATPLOTLIB} ${NUMPY} ${MKL} $XSPEC $FITS
   - source activate build
 
   # XSPEC and DS9
