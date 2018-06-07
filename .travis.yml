@@ -45,7 +45,7 @@ before_install:
     fi
 
 install:
-    - python setup.py $INSTALL_TYPE &> install.log
+    - python setup.py $INSTALL_TYPE
 
 script:
   - . travis/test.sh
