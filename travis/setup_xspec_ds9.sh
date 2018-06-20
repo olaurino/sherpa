@@ -22,6 +22,10 @@ if [[ $TRAVIS_OS_NAME == "linux" ]];
 then
     sudo apt-get update
     sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev
+
+    # Special requirement for the linux build, we need to pin down the exact version of the library xspec was
+    # built with
+    sed -i.orig "s|#gfortran_libraries = gfortran|gfortran_libraries= :libgfortran.so.3|g" setup.cfg
 else  # osx
     # It looks like xvfb doesn't "just work" on osx travis, so...
     sudo Xvfb :99 -ac -screen 0 1024x768x8 &
@@ -39,4 +43,3 @@ sed -i.orig "s/#with-xspec=True/with-xspec=True/g" setup.cfg
 sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=${xspec_library_path}|g" setup.cfg
 sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=${xspec_include_path}|g" setup.cfg
 sed -i.orig "s|#wcslib_lib_dirs = None|wcslib_lib_dirs=${wcs_library_path}|g" setup.cfg
-sed -i.orig "s|#gfortran_libraries = gfortran|gfortran_libraries= :libgfortran.so.3|g" setup.cfg
