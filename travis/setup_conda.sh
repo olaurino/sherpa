@@ -17,9 +17,6 @@ else  # osx
 
     # This is required on macOS when building with conda
     sed -i.orig "s|#extra-fortran-link-flags=|extra-fortran-link-flags=-undefined dynamic_lookup -bundle|" setup.cfg
-
-    # It looks like xvfb doesn't "just work" on osx travis, so...
-    sudo Xvfb :99 -ac -screen 0 1024x768x8 &
 fi
 
 # Download and install conda
