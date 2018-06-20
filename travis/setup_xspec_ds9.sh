@@ -23,10 +23,23 @@ then
     sudo apt-get update
     sudo apt-get install -qq libwcs4 wcslib-dev libx11-dev libsm-dev libxrender-dev
 
+    # Platform specific build options
+    xspec_library_path=$miniconda/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/
+    xspec_include_path=$miniconda/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/include/
+
     # Special requirement for the linux build, we need to pin down the exact version of the library xspec was
     # built with
     sed -i.orig "s|#gfortran_libraries = gfortran|gfortran_libraries= :libgfortran.so.3|g" setup.cfg
+
+    # Also, at this point the linux version of the xspec-modelsonly package is relying on a system package
+    wcs_library_path=/usr/lib/x86_64-linux-gnu/
+    sed -i.orig "s|#wcslib_lib_dirs = None|wcslib_lib_dirs=${wcs_library_path}|g" setup.cfg
 else  # osx
+
+    # Platform specific build options
+    xspec_library_path=$miniconda/envs/build/Xspec/x86_64-apple-darwin14.5.0/lib/
+    xspec_include_path=$miniconda/envs/build/Xspec/x86_64-apple-darwin14.5.0/include/
+
     # It looks like xvfb doesn't "just work" on osx travis, so...
     sudo Xvfb :99 -ac -screen 0 1024x768x8 &
 fi
@@ -34,12 +47,7 @@ fi
 # Set HEADAS environment variables
 export HEADAS=$miniconda/envs/build/Xspec/spectral
 
-xspec_library_path=$miniconda/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/lib/
-xspec_include_path=$miniconda/envs/build/Xspec/x86_64-unknown-linux-gnu-libc2.15-0/include/
-wcs_library_path=/usr/lib/x86_64-linux-gnu/
-
 # Change build configuration
 sed -i.orig "s/#with-xspec=True/with-xspec=True/g" setup.cfg
 sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=${xspec_library_path}|g" setup.cfg
 sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=${xspec_include_path}|g" setup.cfg
-sed -i.orig "s|#wcslib_lib_dirs = None|wcslib_lib_dirs=${wcs_library_path}|g" setup.cfg
