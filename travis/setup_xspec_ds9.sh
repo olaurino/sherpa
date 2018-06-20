@@ -11,10 +11,10 @@ wget --quiet $ds9_site$ds9_tar
 wget --quiet $xpa_site$xpa_tar
 
 # untar them
-THIS_DIR=$(pwd)
+main_dir=$(pwd)
 cd $miniconda/bin
-tar xf $THIS_DIR/$ds9_tar
-tar xf $THIS_DIR/$xpa_tar
+tar xf $main_dir/$ds9_tar
+tar xf $main_dir/$xpa_tar
 cd -
 
 # install build dependencies
@@ -25,6 +25,7 @@ then
 else  # osx
     # It looks like xvfb doesn't "just work" on osx travis, so...
     sudo Xvfb :99 -ac -screen 0 1024x768x8 &
+fi
 
 # Set HEADAS environment variables
 export HEADAS=$miniconda/envs/build/Xspec/spectral
