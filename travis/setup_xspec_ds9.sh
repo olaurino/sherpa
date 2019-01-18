@@ -70,6 +70,9 @@ case "${XSPECVER}" in
       ;;
   *)
       xspec_version_string="12.9.1"
+      sed -i.orig "s/#cfitsio_libraries/cfitsio_libraries/g" setup.cfg
+      sed -i.orig "s/#ccfits_libraries/ccfits_libraries/g" setup.cfg
+      sed -i.orig "s/#wcslib_libraries/wcslib_libraries/g" setup.cfg
       ;;
 esac
 
@@ -77,9 +80,6 @@ esac
 sed -i.orig "s/#with-xspec=True/with-xspec=True/g" setup.cfg
 sed -i.orig "s|#xspec_lib_dirs = None|xspec_lib_dirs=${xspec_library_path}|g" setup.cfg
 sed -i.orig "s|#xspec_include_dirs = None|xspec_include_dirs=${xspec_include_path}|g" setup.cfg
-sed -i.orig "s/#cfitsio_libraries/cfitsio_libraries/g" setup.cfg
-sed -i.orig "s/#ccfits_libraries/ccfits_libraries/g" setup.cfg
-sed -i.orig "s/#wcslib_libraries/wcslib_libraries/g" setup.cfg
 sed -i.orig "s|#gfortran_libraries = gfortran|gfortran_libraries= ${libgfortran_name}|g" setup.cfg
 sed -i.orig "s|#xspec_version = 12.9.0|xspec_version = ${xspec_version_string}|g" setup.cfg
 
