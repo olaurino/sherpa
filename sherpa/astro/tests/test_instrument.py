@@ -1356,7 +1356,7 @@ class MyPowLaw1D(PowLaw1D):
 def test_arf1d_no_pha_zero_energy_bin():
     """What happens when the first bin starts at 0, no replacement
 
-    This replicates a test in test_data.py; note that this test
+    This replicates a test in test_astro_data.py; note that this test
     is left here, but other tests below only include the "with
     replacement" version, to avoid duplication.
     """
