@@ -656,10 +656,10 @@ class Data1D(DataND):
             An instance of the EvaluationSpace1D representing the data space for this object.
         """
         filter = bool_cast(filter)
+
+        data_x = self.x
         if filter:
-            data_x = self._x
-        else:
-            data_x = self.x
+            data_x = self.apply_filter(self.x)
 
         return EvaluationSpace1D(data_x)
 

@@ -19,7 +19,7 @@
 import numpy
 import pytest
 
-from sherpa.data import Data, BaseData, Data1D
+from sherpa.data import Data, BaseData, Data1D, DataSimulFit
 from sherpa.models import Polynom1D
 from sherpa.utils.err import NotImplementedErr, DataErr
 
@@ -45,9 +45,97 @@ def data_no_errors():
     return Data(NAME, X_ARRAY, Y_ARRAY)
 
 
+@pytest.fixture
+def data_simul_fit():
+    data_one = Data1D("data_one", X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+    data_two = Data1D("data_two", MULTIPLIER * X_ARRAY, MULTIPLIER * Y_ARRAY,
+                      MULTIPLIER * STATISTICAL_ERROR_ARRAY, MULTIPLIER * SYSTEMATIC_ERROR_ARRAY)
+    return DataSimulFit(NAME, (data_one, data_two))
+
+
+@pytest.fixture
+def data_simul_fit_no_errors():
+    data_one = Data1D("data_one", X_ARRAY, Y_ARRAY)
+    data_two = Data1D("data_two", MULTIPLIER * X_ARRAY, MULTIPLIER * Y_ARRAY)
+    return DataSimulFit(NAME, (data_one, data_two))
+
+
+@pytest.fixture
+def data_simul_fit_some_errors():
+    data_one = Data1D("data_one", X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+    data_two = Data1D("data_two", MULTIPLIER * X_ARRAY, MULTIPLIER * Y_ARRAY)
+    return DataSimulFit(NAME, (data_one, data_two))
+
+
 def test_base_data_instantiation():
     with pytest.raises(NotImplementedErr):
         BaseData()
+
+
+@pytest.mark.parametrize("data", (Data,), indirect=True)
+def test_data_get_x(data):
+    with pytest.raises(DataErr):
+        data.get_x()
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_x0(data):
+    with pytest.raises(DataErr):
+        data.get_x0()
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_x1(data):
+    with pytest.raises(DataErr):
+        data.get_x1()
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_xlabel(data):
+    assert data.get_xlabel() == "x"
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_x0label(data):
+    assert data.get_x0label() == "x0"
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_x1label(data):
+    assert data.get_x1label() == "x1"
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_ylabel(data):
+    assert data.get_ylabel() == "y"
+
+
+@pytest.mark.parametrize("data", (Data,), indirect=True)
+def test_data_get_dims(data):
+    with pytest.raises(DataErr):
+        data.get_dims()
+
+
+@pytest.mark.parametrize("data", (Data,), indirect=True)
+def test_data_get_img(data):
+    with pytest.raises(DataErr):
+        data.get_img()
+
+
+@pytest.mark.parametrize("data", (Data,), indirect=True)
+def test_data_get_imgerr(data):
+    with pytest.raises(DataErr):
+        data.get_imgerr()
+
+
+@pytest.mark.parametrize("data", (Data,), indirect=True)
+def test_data_get_xerr(data):
+    assert data.get_xerr() is None
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data_get_xerr(data):
+    assert data.get_xerr() is None
 
 
 @pytest.mark.parametrize("data", (Data,), indirect=True)
@@ -58,7 +146,7 @@ def test_data_str_repr(data):
 
 
 @pytest.mark.parametrize("data", (Data1D,), indirect=True)
-def test_data_str_repr(data):
+def test_data1d_str_repr(data):
     assert repr(data) == "<Data1D data set instance 'data_test'>"
     assert str(data) == 'name      = data_test\nx         = Int64[10]\ny         = Int64[10]\nstaterror = ' \
                         'Float64[10]\nsyserror  = Float64[10]'
@@ -91,6 +179,12 @@ def test_data_get_indep_ignore_string_lower(data):
 def test_data_get_indep_ignore_string_upper(data):
     with pytest.raises(DataErr):
         data.ignore(0, "1")
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_indep_notice(data):
+    data.notice(0, X_THRESHOLD)
+    numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[:X_THRESHOLD + 1], ])
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -138,16 +232,14 @@ def test_data_get_staterror_filter(data):
 
 def test_data_get_staterror_func(data_no_errors):
     data_no_errors.filter = X_ARRAY <= X_THRESHOLD
-    numpy.testing.assert_array_equal(data_no_errors.get_staterror(filter=False,
-                                                                  staterrfunc=lambda x: MULTIPLIER * x),
-                                     MULTIPLIER * Y_ARRAY)
+    stat_error = data_no_errors.get_staterror(filter=False, staterrfunc=lambda x: MULTIPLIER * x)
+    numpy.testing.assert_array_equal(stat_error, MULTIPLIER * Y_ARRAY)
 
 
 def test_data_get_staterror_filter_func(data_no_errors):
     data_no_errors.filter = X_ARRAY <= X_THRESHOLD
-    numpy.testing.assert_array_equal(data_no_errors.get_staterror(filter=True,
-                                                                  staterrfunc=lambda x: MULTIPLIER * x),
-                                     MULTIPLIER * Y_ARRAY[:X_THRESHOLD + 1])
+    stat_error = data_no_errors.get_staterror(filter=True, staterrfunc=lambda x: MULTIPLIER * x)
+    numpy.testing.assert_array_equal(stat_error, MULTIPLIER * Y_ARRAY[:X_THRESHOLD + 1])
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -162,8 +254,48 @@ def test_data_get_syserror_filter(data):
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_error(data):
+    error = data.get_error()
+    expected_error = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
+    numpy.testing.assert_array_equal(error, expected_error)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_yerr(data):
+    error = data.get_yerr()
+    expected_error = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
+    numpy.testing.assert_array_equal(error, expected_error)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 def test_data_get_dep(data):
     numpy.testing.assert_array_equal(data.get_dep(), Y_ARRAY)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_y(data):
+    numpy.testing.assert_array_equal(data.get_y(), Y_ARRAY)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_y_filter(data):
+    data.filter = X_ARRAY <= X_THRESHOLD
+    numpy.testing.assert_array_equal(data.get_y(filter=True), Y_ARRAY[:X_THRESHOLD + 1])
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_y_filter_func(data):
+    data.filter = X_ARRAY <= X_THRESHOLD
+    y = data.get_y(filter=True, yfunc=lambda x: MULTIPLIER*x)
+    expected_y = (Y_ARRAY[:X_THRESHOLD + 1], MULTIPLIER*X_ARRAY[:X_THRESHOLD + 1])
+    numpy.testing.assert_array_equal(y, expected_y)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_get_y_func(data):
+    y = data.get_y(filter=True, yfunc=lambda x: MULTIPLIER*x)
+    expected_y = (Y_ARRAY, MULTIPLIER*X_ARRAY)
+    numpy.testing.assert_array_equal(y, expected_y)
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -173,3 +305,108 @@ def test_data_eval_model(data):
     model.c1 = MULTIPLIER
     evaluated_data = data.eval_model(model)
     numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * X_ARRAY)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_eval_model_to_fit_no_filter(data):
+    model = Polynom1D()
+    model.c0 = 0
+    model.c1 = MULTIPLIER
+    evaluated_data = data.eval_model_to_fit(model)
+    numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * X_ARRAY)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_eval_model_to_fit_filter(data):
+    model = Polynom1D()
+    model.c0 = 0
+    model.c1 = MULTIPLIER
+    data.filter = X_ARRAY <= X_THRESHOLD
+    evaluated_data = data.eval_model_to_fit(model)
+    numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * X_ARRAY[:X_THRESHOLD + 1])
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_to_guess(data):
+    actual = data.to_guess()
+    expected = [[100, 101, 102, 103, 104, 105, 106, 107, 108, 109], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
+    numpy.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_to_fit(data):
+    actual = data.to_fit()
+    expected = [Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY]
+    numpy.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data_to_plot(data):
+    actual = data.to_plot()
+    yerr = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
+    expected = [X_ARRAY, Y_ARRAY, yerr, None, "x", "y"]
+    numpy.testing.assert_array_equal(actual[0], expected[0])
+    numpy.testing.assert_array_equal(actual[1], expected[1])
+    numpy.testing.assert_array_equal(actual[2], expected[2])
+    numpy.testing.assert_array_equal(actual[3], expected[3])
+    numpy.testing.assert_array_equal(actual[4], expected[4])
+    numpy.testing.assert_array_equal(actual[5], expected[5])
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data_to_component_plot(data):
+    actual = data.to_component_plot()
+    yerr = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
+    expected = [X_ARRAY, Y_ARRAY, yerr, None, "x", "y"]
+    numpy.testing.assert_array_equal(actual[0], expected[0])
+    numpy.testing.assert_array_equal(actual[1], expected[1])
+    numpy.testing.assert_array_equal(actual[2], expected[2])
+    numpy.testing.assert_array_equal(actual[3], expected[3])
+    numpy.testing.assert_array_equal(actual[4], expected[4])
+    numpy.testing.assert_array_equal(actual[5], expected[5])
+
+
+def test_data_simul_fit(data_simul_fit):
+    y, stat_error, systematic_error = data_simul_fit.to_fit()
+    expected_y = numpy.concatenate((Y_ARRAY, MULTIPLIER * Y_ARRAY))
+    expected_stat_error = numpy.concatenate((STATISTICAL_ERROR_ARRAY, MULTIPLIER * STATISTICAL_ERROR_ARRAY))
+    expected_sys_error = numpy.concatenate((SYSTEMATIC_ERROR_ARRAY, MULTIPLIER * SYSTEMATIC_ERROR_ARRAY))
+    numpy.testing.assert_array_equal(y, expected_y)
+    numpy.testing.assert_array_equal(stat_error, expected_stat_error)
+    numpy.testing.assert_array_equal(systematic_error, expected_sys_error)
+
+
+def test_data_simul_fit_to_plot(data_simul_fit):
+    actual = data_simul_fit.to_fit()
+    expected_y = numpy.concatenate((Y_ARRAY, MULTIPLIER * Y_ARRAY))
+    expected_stat_error = numpy.concatenate((STATISTICAL_ERROR_ARRAY, MULTIPLIER * STATISTICAL_ERROR_ARRAY))
+    expected_sys_error = numpy.concatenate((SYSTEMATIC_ERROR_ARRAY, MULTIPLIER * SYSTEMATIC_ERROR_ARRAY))
+    numpy.testing.assert_array_equal(actual[0], expected_y)
+    numpy.testing.assert_array_equal(actual[1], expected_stat_error)
+    numpy.testing.assert_array_equal(actual[2], expected_sys_error)
+
+
+def test_data_simul_fit_no_errors(data_simul_fit_no_errors):
+    y, stat_error, systematic_error = data_simul_fit_no_errors.to_fit()
+    expected_y = numpy.concatenate((Y_ARRAY, MULTIPLIER * Y_ARRAY))
+    expected_stat_error = None
+    expected_sys_error = None
+    numpy.testing.assert_array_equal(y, expected_y)
+    numpy.testing.assert_array_equal(stat_error, expected_stat_error)
+    numpy.testing.assert_array_equal(systematic_error, expected_sys_error)
+
+
+def test_data_simul_fit_some_errors(data_simul_fit_some_errors):
+    with pytest.raises(DataErr):
+        data_simul_fit_some_errors.to_fit()
+
+
+def test_data_simul_fit_eval_model_to_fit(data_simul_fit):
+    model = Polynom1D()
+    model.c0 = 0
+    model.c1 = MULTIPLIER
+    data_simul_fit.datasets[0].filter = X_ARRAY <= X_THRESHOLD
+    data_simul_fit.datasets[1].filter = X_ARRAY <= X_THRESHOLD
+    evaluated_data = data_simul_fit.eval_model_to_fit((model, model))
+    expected_data = numpy.concatenate((MULTIPLIER * X_ARRAY[:X_THRESHOLD+1], MULTIPLIER **2 * X_ARRAY[:X_THRESHOLD+1]))
+    numpy.testing.assert_array_equal(evaluated_data, expected_data)
