@@ -31,7 +31,7 @@ STATISTICAL_ERROR_ARRAY = numpy.arange(0, 1, 0.1)
 X_THRESHOLD = 3
 MULTIPLIER = 2
 
-DATA_1D_CLASSES = (Data, Data1D, DataND)
+DATA_1D_CLASSES = (Data1D, )
 
 
 @pytest.fixture
@@ -454,7 +454,9 @@ def test_data1d_get_bounding_mask_filter(data):
 def test_data1d_get_bounding_mask(data):
     mask = X_ARRAY <= X_THRESHOLD
     data.mask = mask
-    assert data.get_bounding_mask() == (mask, (X_ARRAY.size,))
+    actual = data.get_bounding_mask()
+    numpy.testing.assert_array_equal(actual[0], mask)
+    numpy.testing.assert_array_equal(actual[1], X_ARRAY.size)
 
 
 @pytest.mark.parametrize("data", (Data1D,), indirect=True)
