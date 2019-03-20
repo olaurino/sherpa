@@ -562,13 +562,21 @@ class DataSimulFit(Data):
 
         return (total_dep, total_staterror, total_syserror)
 
+    # DATA-NOTE: this implementation is weird. Is this even used?
     def to_plot(self, yfunc=None, staterrfunc=None):
         return self.datasets[0].to_plot(yfunc.parts[0], staterrfunc)
 
 
+# DATA-NOTE: DataND seems pretty useless. The only reason to keep it might be to provide a base implementation for
+# ND datasets, which aren't specified anyway. I Data had the y attribute to begin with, we probably would not
+# need DataND, and an hypothetical Data3D might inherit from Data directly.
+# Testing shows that this class cannot be instantiated by itself.
 class DataND(Data):
     "Base class for Data1D, Data2D, etc."
 
+    # DATA-NOTE: It looks like set_dep is only used by LikelyhoodRatioTest. In any case
+    # self.y is only defined for classes that have y in their __init__, which does not happen before
+    # Data1D and Data2D. So the BaseClass implementation is actually bypassed.
     def get_dep(self, filter=False):
         y = self.y
         filter = bool_cast(filter)
@@ -706,11 +714,6 @@ class Data1D(DataND):
         if numpy.iterable(self.mask):
             # create bounding box around noticed image regions
             mask = numpy.array(self.mask)
-#            xi = numpy.where(mask == True)[0]
-#            xlo = xi.min()
-#            xhi = xi.max()
-#            size = (mask[xlo:xhi+1].size,)
-#            mask = mask[xlo:xhi+1]
             size = (mask.size,)
         return mask, size
 

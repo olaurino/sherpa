@@ -19,7 +19,7 @@
 import numpy
 import pytest
 
-from sherpa.data import Data, BaseData, Data1D, DataSimulFit
+from sherpa.data import Data, BaseData, Data1D, DataSimulFit, DataND
 from sherpa.models import Polynom1D
 from sherpa.utils.err import NotImplementedErr, DataErr
 
@@ -31,7 +31,7 @@ STATISTICAL_ERROR_ARRAY = numpy.arange(0, 1, 0.1)
 X_THRESHOLD = 3
 MULTIPLIER = 2
 
-DATA_1D_CLASSES = (Data, Data1D)
+DATA_1D_CLASSES = (Data, Data1D, DataND)
 
 
 @pytest.fixture
@@ -217,6 +217,14 @@ def test_data_get_indep_filter_null_mask(data):
 def test_data_get_dep_filter(data):
     data.filter = X_ARRAY <= X_THRESHOLD
     numpy.testing.assert_array_equal(data.get_dep(filter=True), Y_ARRAY[:X_THRESHOLD + 1])
+
+
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+def test_data_set_dep_filter(data):
+    data.set_dep([0, 1])
+    numpy.testing.assert_array_equal(data.get_dep(filter=True), [0, 1])
+    data.set_dep(0)
+    numpy.testing.assert_array_equal(data.get_dep(filter=True), [0] * Y_ARRAY.size)
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -410,3 +418,58 @@ def test_data_simul_fit_eval_model_to_fit(data_simul_fit):
     evaluated_data = data_simul_fit.eval_model_to_fit((model, model))
     expected_data = numpy.concatenate((MULTIPLIER * X_ARRAY[:X_THRESHOLD+1], MULTIPLIER **2 * X_ARRAY[:X_THRESHOLD+1]))
     numpy.testing.assert_array_equal(evaluated_data, expected_data)
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_dims(data):
+    assert data.get_dims() == (X_ARRAY.size, )
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_filter(data):
+    data.filter = X_ARRAY <= X_THRESHOLD
+    assert data.get_filter() == '0.0000:3.0000'
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_filter_mask(data):
+    data.mask = X_ARRAY <= X_THRESHOLD
+    assert data.get_filter() == '0.0000:3.0000'
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_filter_expr(data):
+    data.filter = X_ARRAY <= X_THRESHOLD
+    assert data.get_filter_expr() == '0.0000-3.0000 x'
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_bounding_mask_filter(data):
+    mask = X_ARRAY <= X_THRESHOLD
+    data.filter = mask
+    assert data.get_bounding_mask() == (True, None)
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_bounding_mask(data):
+    mask = X_ARRAY <= X_THRESHOLD
+    data.mask = mask
+    assert data.get_bounding_mask() == (mask, (X_ARRAY.size,))
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_img(data):
+    numpy.testing.assert_array_equal(data.get_img(), [Y_ARRAY, ])
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_img_yfunc(data):
+    actual = data.get_img(yfunc=lambda x: MULTIPLIER * x)
+    expected = ([Y_ARRAY, ], [MULTIPLIER * X_ARRAY, ], )
+    numpy.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_imgerr(data):
+    expected_error = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
+    numpy.testing.assert_array_equal(data.get_imgerr(), [expected_error, ])
