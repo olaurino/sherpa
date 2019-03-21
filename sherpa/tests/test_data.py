@@ -31,13 +31,16 @@ STATISTICAL_ERROR_ARRAY = numpy.arange(0, 1, 0.1)
 X_THRESHOLD = 3
 MULTIPLIER = 2
 
-DATA_1D_CLASSES = (Data1D, )
+DATA_1D_CLASSES = (Data1D, Data)
 
 
 @pytest.fixture
 def data(request):
     data_class = request.param
-    return data_class(NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+    if data_class is Data1D:
+        return data_class(NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+    else:
+        return data_class(NAME, (X_ARRAY, ), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
 
 
 @pytest.fixture
@@ -141,8 +144,8 @@ def test_data_get_xerr(data):
 @pytest.mark.parametrize("data", (Data,), indirect=True)
 def test_data_str_repr(data):
     assert repr(data) == "<Data data set instance 'data_test'>"
-    assert str(data) == 'name      = data_test\nindep     = Int64[10]\ndep       = Int64[10]\nstaterror = ' \
-                        'Float64[10]\nsyserror  = Float64[10]'
+    assert str(data) == 'name      = data_test\nindep     = (array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),)\ndep       ' \
+                        '= Int64[10]\nstaterror = Float64[10]\nsyserror  = Float64[10]'
 
 
 @pytest.mark.parametrize("data", (Data1D,), indirect=True)
