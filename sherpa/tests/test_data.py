@@ -77,7 +77,7 @@ def test_base_data_instantiation():
         BaseData()
 
 
-@pytest.mark.parametrize("data", (Data,), indirect=True)
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_get_x(data):
     with pytest.raises(DataErr):
         data.get_x()
@@ -220,6 +220,15 @@ def test_data_get_indep_ignore_string_upper(data):
 def test_data_1d_get_indep_notice(data):
     data.notice(0, X_THRESHOLD)
     numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[:X_THRESHOLD + 1], ])
+
+
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_1d_int_get_indep_notice(data):
+    data.notice(0, X_THRESHOLD)
+    expected = [(X_ARRAY-0.5)[:X_THRESHOLD + 1], (X_ARRAY+0.5)[:X_THRESHOLD + 1]]
+    actual = data.get_indep(filter=True)
+    numpy.testing.assert_array_equal(actual[0], expected[0])
+    numpy.testing.assert_array_equal(actual[1], expected[1])
 
 
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
@@ -378,7 +387,7 @@ def test_data_get_y_func(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_get_y_func(data):
+def test_data_1d_int_get_y_func(data):
     y = data.get_y(filter=True, yfunc=lambda x, y: (MULTIPLIER*x, MULTIPLIER*y))
     expected_y = (Y_ARRAY, (MULTIPLIER*(X_ARRAY-0.5), MULTIPLIER*(X_ARRAY+0.5)))
     numpy.testing.assert_array_equal(y[0], expected_y[0])
@@ -414,7 +423,7 @@ def test_data_eval_model_to_fit_filter(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_eval_model_to_fit_filter(data):
+def test_data_1d_int_eval_model_to_fit_filter(data):
     model = Polynom1D()
     model.c0 = 0
     model.c1 = MULTIPLIER
@@ -431,7 +440,7 @@ def test_data_to_guess(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_to_guess(data):
+def test_data_1d_int_to_guess(data):
     actual = data.to_guess()
     expected = [Y_ARRAY, X_ARRAY-0.5]
     numpy.testing.assert_array_equal(actual[0], expected[0])
@@ -596,3 +605,23 @@ def test_data1d_get_img_yfunc(data):
 def test_data1d_get_imgerr(data):
     expected_error = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
     numpy.testing.assert_array_equal(data.get_imgerr(), [expected_error, ])
+
+
+@pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
+def test_data1d_get_x(data):
+    numpy.testing.assert_array_equal(data.get_x(), X_ARRAY)
+
+
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data1d_get_xerr(data):
+    assert data.get_xerr() is None
+
+
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data1d_get_xerr(data):
+    numpy.testing.assert_array_equal(data.get_xerr(), [1] * X_ARRAY.size)
+
+
+@pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
+def test_data1d_get_y(data):
+    numpy.testing.assert_array_equal(data.get_y(), Y_ARRAY)
