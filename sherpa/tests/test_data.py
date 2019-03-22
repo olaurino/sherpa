@@ -19,7 +19,7 @@
 import numpy
 import pytest
 
-from sherpa.data import Data, BaseData, Data1D, DataSimulFit, DataND
+from sherpa.data import Data, BaseData, Data1D, DataSimulFit
 from sherpa.models import Polynom1D
 from sherpa.utils.err import NotImplementedErr, DataErr
 
@@ -166,34 +166,58 @@ def test_data_get_indep_filter(data):
     numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[:X_THRESHOLD + 1], ])
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-def test_data_get_indep_ignore(data):
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data_1d_get_indep_ignore(data):
     data.ignore(0, X_THRESHOLD)
     numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[X_THRESHOLD + 1:], ])
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-def test_data_get_indep_ignore_string_lower(data):
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
+def test_data_1d_get_indep_ignore(data):
+    data.ignore((0, ), (X_THRESHOLD, ), data.get_indep())
+    numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[X_THRESHOLD + 1:], ])
+
+
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data_1d_get_indep_ignore_string_lower(data):
     with pytest.raises(DataErr):
         data.ignore("0", 1)
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-def test_data_get_indep_ignore_string_upper(data):
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
+def test_data_get_indep_ignore_string_lower(data):
+    with pytest.raises(DataErr):
+        data.ignore(("0", ), (1, ), data.get_indep())
+
+
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data_1d_get_indep_ignore_string_upper(data):
     with pytest.raises(DataErr):
         data.ignore(0, "1")
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-def test_data_get_indep_notice(data):
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
+def test_data_get_indep_ignore_string_upper(data):
+    with pytest.raises(DataErr):
+        data.ignore((0, ), ("1", ), data.get_indep())
+
+
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data_1d_get_indep_notice(data):
     data.notice(0, X_THRESHOLD)
+    numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[:X_THRESHOLD + 1], ])
+
+
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
+def test_data_get_indep_notice(data):
+    data.notice((0, ), (X_THRESHOLD, ), data.get_indep())
     numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[:X_THRESHOLD + 1], ])
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 def test_data_get_indep_callable_filter(data):
-    data.filter = lambda x: x <= X_THRESHOLD
-    numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[:X_THRESHOLD + 1], ])
+    with pytest.raises(AttributeError):
+        data.filter = lambda x: x <= X_THRESHOLD
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -222,7 +246,7 @@ def test_data_get_dep_filter(data):
     numpy.testing.assert_array_equal(data.get_dep(filter=True), Y_ARRAY[:X_THRESHOLD + 1])
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
 def test_data_set_dep_filter(data):
     data.set_dep([0, 1])
     numpy.testing.assert_array_equal(data.get_dep(filter=True), [0, 1])
@@ -345,14 +369,14 @@ def test_data_to_guess(data):
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-def test_data_to_fit(data):
+def test_data_1d_to_fit(data):
     actual = data.to_fit()
     expected = [Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY]
     numpy.testing.assert_array_equal(actual, expected)
 
 
-@pytest.mark.parametrize("data", (Data1D,), indirect=True)
-def test_data_to_plot(data):
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data_1d_to_plot(data):
     actual = data.to_plot()
     yerr = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
     expected = [X_ARRAY, Y_ARRAY, yerr, None, "x", "y"]
@@ -364,8 +388,8 @@ def test_data_to_plot(data):
     numpy.testing.assert_array_equal(actual[5], expected[5])
 
 
-@pytest.mark.parametrize("data", (Data1D,), indirect=True)
-def test_data_to_component_plot(data):
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data_1d_to_component_plot(data):
     actual = data.to_component_plot()
     yerr = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
     expected = [X_ARRAY, Y_ARRAY, yerr, None, "x", "y"]
@@ -375,6 +399,30 @@ def test_data_to_component_plot(data):
     numpy.testing.assert_array_equal(actual[3], expected[3])
     numpy.testing.assert_array_equal(actual[4], expected[4])
     numpy.testing.assert_array_equal(actual[5], expected[5])
+
+
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
+def test_data_to_contour(data):
+    with pytest.raises(DataErr):
+        data.to_contour()
+
+
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
+def test_data_to_plot(data):
+    with pytest.raises(DataErr):
+        data.to_plot()
+
+
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
+def test_data_to_component_plot(data):
+    with pytest.raises(DataErr):
+        data.to_component_plot()
+
+
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
+def test_data_to_contour(data):
+    with pytest.raises(DataErr):
+        data.to_contour()
 
 
 def test_data_simul_fit(data_simul_fit):
