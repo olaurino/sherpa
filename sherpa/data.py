@@ -756,9 +756,15 @@ class Data1DInt(Data1D):
 
     def _get_data_space(self, filter=False):
         filter = bool_cast(filter)
+
+        data_xlo = self.xlo
+        data_xhi = self.xhi
+
         if filter:
-            return EvaluationSpace1D(self._lo, self._hi)
-        return EvaluationSpace1D(self.xlo, self.xhi)
+            data_xlo = self.apply_filter(self.xlo)
+            data_xhi = self.apply_filter(self.xhi)
+
+        return EvaluationSpace1D(data_xlo, data_xhi)
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
         indep = self._get_x_space(filter, model, use_evaluation_space)

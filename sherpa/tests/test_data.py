@@ -19,7 +19,7 @@
 import numpy
 import pytest
 
-from sherpa.data import Data, BaseData, Data1D, DataSimulFit
+from sherpa.data import Data, BaseData, Data1D, DataSimulFit, Data1DInt
 from sherpa.models import Polynom1D
 from sherpa.utils.err import NotImplementedErr, DataErr
 
@@ -31,7 +31,7 @@ STATISTICAL_ERROR_ARRAY = numpy.arange(0, 1, 0.1)
 X_THRESHOLD = 3
 MULTIPLIER = 2
 
-DATA_1D_CLASSES = (Data1D, Data)
+DATA_1D_CLASSES = (Data1D, Data, Data1DInt)
 
 
 @pytest.fixture
@@ -39,8 +39,10 @@ def data(request):
     data_class = request.param
     if data_class is Data1D:
         return data_class(NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
-    else:
+    elif data_class is Data:
         return data_class(NAME, (X_ARRAY, ), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+    elif data_class is Data1DInt:
+        return data_class(NAME, X_ARRAY-0.5, X_ARRAY+0.5, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
 
 
 @pytest.fixture
@@ -155,15 +157,27 @@ def test_data1d_str_repr(data):
                         'Float64[10]\nsyserror  = Float64[10]'
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data, Data1D), indirect=True)
 def test_data_get_indep(data):
     numpy.testing.assert_array_equal(data.get_indep(), [X_ARRAY, ])
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_indep(data):
+    numpy.testing.assert_array_equal(data.get_indep(), (X_ARRAY-0.5, X_ARRAY+0.5))
+
+
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
 def test_data_get_indep_filter(data):
     data.filter = X_ARRAY <= X_THRESHOLD
     numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[:X_THRESHOLD + 1], ])
+
+
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_indep_filter(data):
+    data.filter = X_ARRAY <= X_THRESHOLD
+    expected = (X_ARRAY-0.5)[:X_THRESHOLD + 1], (X_ARRAY+0.5)[:X_THRESHOLD + 1]
+    numpy.testing.assert_array_equal(data.get_indep(filter=True), expected)
 
 
 @pytest.mark.parametrize("data", (Data1D, ), indirect=True)
@@ -220,20 +234,40 @@ def test_data_get_indep_callable_filter(data):
         data.filter = lambda x: x <= X_THRESHOLD
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
 def test_data_get_indep_mask(data):
     data.mask = X_ARRAY == 0
     numpy.testing.assert_array_equal(data.get_indep(filter=True), X_ARRAY[0])  # Why is this not an array?
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_indep_mask(data):
+    data.mask = X_ARRAY == 0
+    numpy.testing.assert_array_equal(data.get_indep(filter=True), ([(X_ARRAY-0.5)[0]], [(X_ARRAY+0.5)[0]]))
+
+
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
 def test_data_get_indep_filter_mask(data):
     data.filter = X_ARRAY <= X_THRESHOLD
     data.mask = X_ARRAY == 0
     numpy.testing.assert_array_equal(data.get_indep(filter=True), [[X_ARRAY[0]]])  # Why is this an array then?
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_indep_filter_mask(data):
+    data.filter = X_ARRAY <= X_THRESHOLD
+    data.mask = X_ARRAY == 0
+    numpy.testing.assert_array_equal(data.get_indep(filter=True), ([(X_ARRAY-0.5)[0]], [(X_ARRAY+0.5)[0]]))
+
+
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
+def test_data_get_indep_filter_null_mask(data):
+    data.mask = False
+    with pytest.raises(DataErr):
+        data.get_indep(filter=True)
+
+
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
 def test_data_get_indep_filter_null_mask(data):
     data.mask = False
     with pytest.raises(DataErr):
@@ -318,7 +352,7 @@ def test_data_get_y_filter(data):
     numpy.testing.assert_array_equal(data.get_y(filter=True), Y_ARRAY[:X_THRESHOLD + 1])
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
 def test_data_get_y_filter_func(data):
     data.filter = X_ARRAY <= X_THRESHOLD
     y = data.get_y(filter=True, yfunc=lambda x: MULTIPLIER*x)
@@ -326,11 +360,29 @@ def test_data_get_y_filter_func(data):
     numpy.testing.assert_array_equal(y, expected_y)
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_y_filter_func(data):
+    data.filter = X_ARRAY <= X_THRESHOLD
+    y = data.get_y(filter=True, yfunc=lambda x, y: (MULTIPLIER*x, MULTIPLIER*y))
+    expected_y = (Y_ARRAY[:X_THRESHOLD + 1], (MULTIPLIER*(X_ARRAY-0.5)[:X_THRESHOLD + 1],
+                  MULTIPLIER*(X_ARRAY+0.5)[:X_THRESHOLD + 1]))
+    numpy.testing.assert_array_equal(y[0], expected_y[0])
+    numpy.testing.assert_array_equal(y[1], expected_y[1])
+
+
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
 def test_data_get_y_func(data):
     y = data.get_y(filter=True, yfunc=lambda x: MULTIPLIER*x)
     expected_y = (Y_ARRAY, MULTIPLIER*X_ARRAY)
     numpy.testing.assert_array_equal(y, expected_y)
+
+
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_get_y_func(data):
+    y = data.get_y(filter=True, yfunc=lambda x, y: (MULTIPLIER*x, MULTIPLIER*y))
+    expected_y = (Y_ARRAY, (MULTIPLIER*(X_ARRAY-0.5), MULTIPLIER*(X_ARRAY+0.5)))
+    numpy.testing.assert_array_equal(y[0], expected_y[0])
+    numpy.testing.assert_array_equal(y[1], expected_y[1])
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -351,7 +403,7 @@ def test_data_eval_model_to_fit_no_filter(data):
     numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * X_ARRAY)
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
 def test_data_eval_model_to_fit_filter(data):
     model = Polynom1D()
     model.c0 = 0
@@ -361,11 +413,29 @@ def test_data_eval_model_to_fit_filter(data):
     numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * X_ARRAY[:X_THRESHOLD + 1])
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_eval_model_to_fit_filter(data):
+    model = Polynom1D()
+    model.c0 = 0
+    model.c1 = MULTIPLIER
+    data.filter = X_ARRAY <= X_THRESHOLD
+    evaluated_data = data.eval_model_to_fit(model)
+    numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * X_ARRAY[:X_THRESHOLD + 1])
+
+
+@pytest.mark.parametrize("data", (Data1D, Data), indirect=True)
 def test_data_to_guess(data):
     actual = data.to_guess()
-    expected = [[100, 101, 102, 103, 104, 105, 106, 107, 108, 109], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]]
+    expected = [Y_ARRAY, X_ARRAY]
     numpy.testing.assert_array_equal(actual, expected)
+
+
+@pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
+def test_data_to_guess(data):
+    actual = data.to_guess()
+    expected = [Y_ARRAY, X_ARRAY-0.5]
+    numpy.testing.assert_array_equal(actual[0], expected[0])
+    numpy.testing.assert_array_equal(actual[1], expected[1])
 
 
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
@@ -420,7 +490,7 @@ def test_data_to_component_plot(data):
 
 
 @pytest.mark.parametrize("data", (Data1D, ), indirect=True)
-def test_data_to_contour(data):
+def test_data_1d_to_contour(data):
     with pytest.raises(DataErr):
         data.to_contour()
 
