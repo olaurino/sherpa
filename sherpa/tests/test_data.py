@@ -19,7 +19,7 @@
 import numpy
 import pytest
 
-from sherpa.data import Data, BaseData, Data1D, DataSimulFit, Data1DInt
+from sherpa.data import Data, BaseData, Data1D, DataSimulFit, Data1DInt, Data2D
 from sherpa.models import Polynom1D
 from sherpa.utils.err import NotImplementedErr, DataErr
 
@@ -37,12 +37,14 @@ DATA_1D_CLASSES = (Data1D, Data, Data1DInt)
 @pytest.fixture
 def data(request):
     data_class = request.param
-    if data_class is Data1D:
-        return data_class(NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
-    elif data_class is Data:
-        return data_class(NAME, (X_ARRAY, ), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
-    elif data_class is Data1DInt:
-        return data_class(NAME, X_ARRAY-0.5, X_ARRAY+0.5, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+
+    instance_args = {
+        Data1D: (NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY),
+        Data: (NAME, (X_ARRAY, ), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY),
+        Data1DInt: (NAME, X_ARRAY-0.5, X_ARRAY+0.5, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+    }
+
+    return data_class(*instance_args[data_class])
 
 
 @pytest.fixture
