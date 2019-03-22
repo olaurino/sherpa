@@ -141,7 +141,7 @@ def test_data_get_xerr(data):
 
 
 @pytest.mark.parametrize("data", (Data1D,), indirect=True)
-def test_data_get_xerr(data):
+def test_data_1d_get_xerr(data):
     assert data.get_xerr() is None
 
 
@@ -165,7 +165,7 @@ def test_data_get_indep(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_get_indep(data):
+def test_data_1d_int_get_indep(data):
     numpy.testing.assert_array_equal(data.get_indep(), (X_ARRAY-0.5, X_ARRAY+0.5))
 
 
@@ -176,7 +176,7 @@ def test_data_get_indep_filter(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_get_indep_filter(data):
+def test_data_1d_int_get_indep_filter(data):
     data.filter = X_ARRAY <= X_THRESHOLD
     expected = (X_ARRAY-0.5)[:X_THRESHOLD + 1], (X_ARRAY+0.5)[:X_THRESHOLD + 1]
     numpy.testing.assert_array_equal(data.get_indep(filter=True), expected)
@@ -189,7 +189,7 @@ def test_data_1d_get_indep_ignore(data):
 
 
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
-def test_data_1d_get_indep_ignore(data):
+def test_data_get_indep_ignore(data):
     data.ignore((0, ), (X_THRESHOLD, ), data.get_indep())
     numpy.testing.assert_array_equal(data.get_indep(filter=True), [X_ARRAY[X_THRESHOLD + 1:], ])
 
@@ -252,7 +252,7 @@ def test_data_get_indep_mask(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_get_indep_mask(data):
+def test_data_1d_int_get_indep_mask(data):
     data.mask = X_ARRAY == 0
     numpy.testing.assert_array_equal(data.get_indep(filter=True), ([(X_ARRAY-0.5)[0]], [(X_ARRAY+0.5)[0]]))
 
@@ -265,7 +265,7 @@ def test_data_get_indep_filter_mask(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_get_indep_filter_mask(data):
+def test_data_1d_int_get_indep_filter_mask(data):
     data.filter = X_ARRAY <= X_THRESHOLD
     data.mask = X_ARRAY == 0
     numpy.testing.assert_array_equal(data.get_indep(filter=True), ([(X_ARRAY-0.5)[0]], [(X_ARRAY+0.5)[0]]))
@@ -279,7 +279,7 @@ def test_data_get_indep_filter_null_mask(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_get_indep_filter_null_mask(data):
+def test_data_1d_int_get_indep_filter_null_mask(data):
     data.mask = False
     with pytest.raises(DataErr):
         data.get_indep(filter=True)
@@ -372,7 +372,7 @@ def test_data_get_y_filter_func(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data_get_y_filter_func(data):
+def test_data_1d_int_get_y_filter_func(data):
     data.filter = X_ARRAY <= X_THRESHOLD
     y = data.get_y(filter=True, yfunc=lambda x, y: (MULTIPLIER*x, MULTIPLIER*y))
     expected_y = (Y_ARRAY[:X_THRESHOLD + 1], (MULTIPLIER*(X_ARRAY-0.5)[:X_THRESHOLD + 1],
@@ -620,7 +620,7 @@ def test_data1d_get_xerr(data):
 
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
-def test_data1d_get_xerr(data):
+def test_data_1d_int_get_xerr(data):
     numpy.testing.assert_array_equal(data.get_xerr(), [1] * X_ARRAY.size)
 
 
