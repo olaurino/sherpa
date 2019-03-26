@@ -803,8 +803,9 @@ class Data2D(DataND):
     def get_indep(self, filter=False, model=None ):
         filter = bool_cast(filter)
         if filter:
-            return (self._x0, self._x1)
-        return (self.x0, self.x1)
+            self._x0, self._x1 = self.apply_filter(self.x0), self.apply_filter(self.x1)
+            return self._x0, self._x1
+        return self.x0, self.x1
 
     def get_x0(self, filter=False):
         return self.get_indep(filter)[0]
@@ -895,11 +896,15 @@ class Data2DInt(Data2D):
         self._x1hi = x1hi
         BaseData.__init__(self)
 
-    def get_indep(self, filter=False):
+    def get_indep(self, filter=False, model=None):
         filter = bool_cast(filter)
         if filter:
-            return (self._x0lo, self._x1lo, self._x0hi, self._x1hi)
-        return (self.x0lo, self.x1lo, self.x0hi, self.x1hi)
+            return (self.apply_filter(self._x0lo),
+                    self.apply_filter(self._x1lo),
+                    self.apply_filter(self._x0hi),
+                    self.apply_filter(self._x1hi)
+                    )
+        return self.x0lo, self.x1lo, self.x0hi, self.x1hi
 
     def get_x0(self, filter=False):
         indep = self.get_indep(filter)

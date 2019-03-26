@@ -19,19 +19,28 @@
 import numpy
 import pytest
 
-from sherpa.data import Data, BaseData, Data1D, DataSimulFit, Data1DInt, Data2D
-from sherpa.models import Polynom1D
+from sherpa.data import Data, BaseData, Data1D, DataSimulFit, Data1DInt, Data2D, Data2DInt
+from sherpa.models import Polynom1D, Polynom2D
 from sherpa.utils.err import NotImplementedErr, DataErr
 
 NAME = "data_test"
 X_ARRAY = numpy.arange(0, 10, 1)
 Y_ARRAY = numpy.arange(100, 110, 1)
+X0_2D_RAW, X1_2D_RAW = numpy.meshgrid(X_ARRAY, X_ARRAY)
+Y_2D_RAW = X0_2D_RAW + X1_2D_RAW
+Y_2D = Y_2D_RAW.ravel()
+X0_2D, X1_2D = X0_2D_RAW.ravel(), X0_2D_RAW.ravel()
+SHAPE_2D = X_ARRAY.size, X_ARRAY.size
 SYSTEMATIC_ERROR_ARRAY = numpy.arange(0, 0.10, 0.01)
 STATISTICAL_ERROR_ARRAY = numpy.arange(0, 1, 0.1)
+SYS_ERROR_2D = Y_2D / 10
+STAT_ERROR_2D = Y_2D / 5
 X_THRESHOLD = 3
 MULTIPLIER = 2
 
 DATA_1D_CLASSES = (Data1D, Data, Data1DInt)
+DATA_2D_CLASSES = (Data2D, Data2DInt)
+ALL_DATA_CLASSES = DATA_1D_CLASSES + DATA_2D_CLASSES
 
 
 @pytest.fixture
@@ -41,7 +50,9 @@ def data(request):
     instance_args = {
         Data1D: (NAME, X_ARRAY, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY),
         Data: (NAME, (X_ARRAY, ), Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY),
-        Data1DInt: (NAME, X_ARRAY-0.5, X_ARRAY+0.5, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY)
+        Data1DInt: (NAME, X_ARRAY-0.5, X_ARRAY+0.5, Y_ARRAY, STATISTICAL_ERROR_ARRAY, SYSTEMATIC_ERROR_ARRAY),
+        Data2D: (NAME, X0_2D, X1_2D, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D),
+        Data2DInt: (NAME, X0_2D-0.5, X1_2D-0.5, X0_2D+0.5, X1_2D+0.5, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D)
     }
 
     return data_class(*instance_args[data_class])
@@ -97,62 +108,62 @@ def test_data_get_x1(data):
         data.get_x1()
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_data_get_xlabel(data):
     assert data.get_xlabel() == "x"
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_data_get_x0label(data):
     assert data.get_x0label() == "x0"
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_data_get_x1label(data):
     assert data.get_x1label() == "x1"
 
 
-@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_data_get_ylabel(data):
     assert data.get_ylabel() == "y"
 
 
-@pytest.mark.parametrize("data", (Data,), indirect=True)
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_get_dims(data):
     with pytest.raises(DataErr):
         data.get_dims()
 
 
-@pytest.mark.parametrize("data", (Data,), indirect=True)
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_get_img(data):
     with pytest.raises(DataErr):
         data.get_img()
 
 
-@pytest.mark.parametrize("data", (Data,), indirect=True)
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_get_imgerr(data):
     with pytest.raises(DataErr):
         data.get_imgerr()
 
 
-@pytest.mark.parametrize("data", (Data,), indirect=True)
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_get_xerr(data):
     assert data.get_xerr() is None
 
 
-@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
 def test_data_1d_get_xerr(data):
     assert data.get_xerr() is None
 
 
-@pytest.mark.parametrize("data", (Data,), indirect=True)
+@pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_str_repr(data):
     assert repr(data) == "<Data data set instance 'data_test'>"
     assert str(data) == 'name      = data_test\nindep     = (array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),)\ndep       ' \
                         '= Int64[10]\nstaterror = Float64[10]\nsyserror  = Float64[10]'
 
 
-@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+@pytest.mark.parametrize("data", (Data1D, ), indirect=True)
 def test_data1d_str_repr(data):
     assert repr(data) == "<Data1D data set instance 'data_test'>"
     assert str(data) == 'name      = data_test\nx         = Int64[10]\ny         = Int64[10]\nstaterror = ' \
@@ -627,3 +638,191 @@ def test_data_1d_int_get_xerr(data):
 @pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
 def test_data1d_get_y(data):
     numpy.testing.assert_array_equal(data.get_y(), Y_ARRAY)
+
+
+@pytest.mark.parametrize("data", (Data2D, ), indirect=True)
+def test_data2_get_x0(data):
+    numpy.testing.assert_array_equal(data.get_x0(), X0_2D)
+
+
+@pytest.mark.parametrize("data", (Data2DInt, ), indirect=True)
+def test_data2_int_get_x0(data):
+    actual = data.get_x1()
+    numpy.testing.assert_array_equal(actual, X1_2D)
+
+
+@pytest.mark.parametrize("data", (Data2D, ), indirect=True)
+def test_data2_get_x1(data):
+    numpy.testing.assert_array_equal(data.get_x0(), X0_2D)
+
+
+@pytest.mark.parametrize("data", (Data2DInt, ), indirect=True)
+def test_data2_int_get_x1(data):
+    actual = data.get_x1()
+    numpy.testing.assert_array_equal(actual, X1_2D)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_dims(data):
+    assert data.get_dims() == (X_ARRAY.size, X_ARRAY.size)
+
+
+# DATA-NOTE: Not sure this should work, really, as the 1D implementation does not account for the difference in 2D
+#  data, but in 2D it is hard with the current implementation to figure out the shape is self.shape is None
+@pytest.mark.xfail()
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_dims_no_shape(data):
+    data.shape = None
+    assert data.get_dims() == (X_ARRAY.size, X_ARRAY.size)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_axes(data):
+    numpy.testing.assert_array_equal(data.get_axes(), (X_ARRAY+1, X_ARRAY+1))
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_img(data):
+    numpy.testing.assert_array_equal(data.get_img(), Y_2D_RAW)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_imgerr(data):
+    expected_error = numpy.sqrt(STAT_ERROR_2D ** 2 + SYS_ERROR_2D ** 2).reshape(SHAPE_2D)
+    numpy.testing.assert_array_equal(data.get_imgerr(), expected_error)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_xerr(data):
+    # DATA-NOTE: why is this true for Data2DInt as well?
+    assert data.get_xerr() is None
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_dep_filter(data):
+    test_filter = X0_2D <= X_THRESHOLD
+    data.filter = test_filter
+    numpy.testing.assert_array_equal(data.get_dep(filter=True), Y_2D[test_filter])
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_staterror(data):
+    numpy.testing.assert_array_equal(data.get_staterror(), STAT_ERROR_2D)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_staterror_filter(data):
+    test_filter = X0_2D <= X_THRESHOLD
+    data.filter = test_filter
+    numpy.testing.assert_array_equal(data.get_staterror(filter=True), STAT_ERROR_2D[test_filter])
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_syserror(data):
+    numpy.testing.assert_array_equal(data.get_syserror(), SYS_ERROR_2D)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_syserror_filter(data):
+    test_filter = X0_2D <= X_THRESHOLD
+    data.filter = test_filter
+    numpy.testing.assert_array_equal(data.get_syserror(filter=True), SYS_ERROR_2D[test_filter])
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_error(data):
+    error = data.get_error()
+    expected_error = numpy.sqrt(SYS_ERROR_2D ** 2 + STAT_ERROR_2D ** 2)
+    numpy.testing.assert_array_equal(error, expected_error)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_yerr(data):
+    error = data.get_yerr()
+    expected_error = numpy.sqrt(SYS_ERROR_2D ** 2 + STAT_ERROR_2D ** 2)
+    numpy.testing.assert_array_equal(error, expected_error)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_dep(data):
+    numpy.testing.assert_array_equal(data.get_dep(), Y_2D)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_y(data):
+    numpy.testing.assert_array_equal(data.get_y(), Y_2D)
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_get_y_filter(data):
+    test_filter = X0_2D <= X_THRESHOLD
+    data.filter = test_filter
+    numpy.testing.assert_array_equal(data.get_y(filter=True), Y_2D[test_filter])
+
+
+@pytest.mark.parametrize("data", (Data2D, ), indirect=True)
+def test_data2_get_y_filter_func(data):
+    test_filter = X0_2D <= X_THRESHOLD
+    data.filter = test_filter
+    y = data.get_y(filter=True, yfunc=lambda x0, x1: MULTIPLIER*(x0 + x1))
+    expected_y = Y_2D[test_filter], (MULTIPLIER * (X0_2D + X1_2D))[test_filter]
+    numpy.testing.assert_array_equal(y[0], expected_y[0])
+    numpy.testing.assert_array_equal(y[1], expected_y[1])
+
+
+@pytest.mark.parametrize("data", (Data2D, ), indirect=True)
+def test_data2_get_img_func(data):
+    y = data.get_img(yfunc=lambda x0, x1: MULTIPLIER*(x0 + x1))
+    expected_y = Y_2D_RAW, MULTIPLIER * (X0_2D + X1_2D).reshape(data.shape)
+    numpy.testing.assert_array_equal(y[0], expected_y[0])
+    numpy.testing.assert_array_equal(y[1], expected_y[1])
+
+
+@pytest.mark.parametrize("data", (Data2DInt, ), indirect=True)
+def test_data2_int_get_y_filter_func(data):
+    test_filter = X0_2D <= X_THRESHOLD
+    data.filter = test_filter
+    y = data.get_y(filter=True, yfunc=lambda x0lo, x0hi, x1lo, x1hi: MULTIPLIER*((x0lo+x0hi)/2 + (x1lo+x1hi)/2))
+    expected_y = Y_2D[test_filter], (MULTIPLIER * (X0_2D + X1_2D))[test_filter]
+    numpy.testing.assert_array_equal(y[0], expected_y[0])
+    numpy.testing.assert_array_equal(y[1], expected_y[1])
+
+
+@pytest.mark.parametrize("data", (Data2DInt, ), indirect=True)
+def test_data2_int_get_img_func(data):
+    y = data.get_img(yfunc=lambda x0lo, x0hi, x1lo, x1hi: MULTIPLIER*((x0lo+x0hi)/2 + (x1lo+x1hi)/2))
+    expected_y = Y_2D_RAW, MULTIPLIER * (X0_2D + X1_2D).reshape(data.shape)
+    numpy.testing.assert_array_equal(y[0], expected_y[0])
+    numpy.testing.assert_array_equal(y[1], expected_y[1])
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_eval_model(data):
+    model = Polynom2D()
+    model.c = 0
+    model.cy1 = MULTIPLIER
+    model.cx1 = MULTIPLIER
+    evaluated_data = data.eval_model(model)
+    numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * (X0_2D + X1_2D))
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_eval_model_to_fit_no_filter(data):
+    model = Polynom2D()
+    model.c = 0
+    model.cy1 = MULTIPLIER
+    model.cx1 = MULTIPLIER
+    evaluated_data = data.eval_model_to_fit(model)
+    numpy.testing.assert_array_equal(evaluated_data, MULTIPLIER * (X0_2D + X1_2D))
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+def test_data2_eval_model_to_fit_filter(data):
+    model = Polynom2D()
+    model.c = 0
+    model.cy1 = MULTIPLIER
+    model.cx1 = MULTIPLIER
+    test_filter = X0_2D <= X_THRESHOLD
+    data.filter = test_filter
+    evaluated_data = data.eval_model_to_fit(model)
+    numpy.testing.assert_array_equal(evaluated_data, (MULTIPLIER * (X0_2D + X1_2D))[test_filter])
