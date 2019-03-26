@@ -841,7 +841,7 @@ class Data2D(DataND):
         x1 = self.get_x1(True)
 
         pos = numpy.asarray(numpy.where(dep == dep.max())).squeeze()
-        if pos.ndim == 0:
+        if pos.ndim == 0:  # DATA-NOTE: Could this ever be False?!
             pos = int(pos)
             return (x0[pos], x1[pos])
 
